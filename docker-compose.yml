@@ -1,0 +1,213 @@
+name: sc-tpcrs
+
+# Note: each service's DATABASE_URL is spelled out in full below (rather than
+# via a YAML anchor) because Compose/YAML anchors can't be string-concatenated
+# with a per-service suffix (`*anchor/suffix` is not valid alias syntax).
+
+services:
+  # ---------------------------------------------------------------- infra --
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./infrastructure/postgres/init-databases.sh:/docker-entrypoint-initdb.d/init-databases.sh:ro
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  neo4j:
+    image: neo4j:5-community
+    environment:
+      NEO4J_AUTH: ${NEO4J_USER}/${NEO4J_PASSWORD}
+    volumes:
+      - neo4j-data:/data
+      - ./infrastructure/neo4j/init-constraints.cypher:/init-constraints.cypher:ro
+    ports:
+      - "7474:7474"
+      - "7687:7687"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:7474 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 15
+
+  neo4j-init:
+    image: neo4j:5-community
+    profiles: ["tools"]
+    depends_on:
+      neo4j:
+        condition: service_healthy
+    entrypoint: ["cypher-shell", "-a", "bolt://neo4j:7687", "-u", "${NEO4J_USER}", "-p", "${NEO4J_PASSWORD}", "-f", "/init-constraints.cypher"]
+    volumes:
+      - ./infrastructure/neo4j/init-constraints.cypher:/init-constraints.cypher:ro
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  kafka:
+    image: bitnami/kafka:3.7
+    environment:
+      KAFKA_CFG_NODE_ID: "0"
+      KAFKA_CFG_PROCESS_ROLES: controller,broker
+      KAFKA_CFG_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:9093
+      KAFKA_CFG_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_CFG_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_CFG_CONTROLLER_QUORUM_VOTERS: 0@kafka:9093
+      KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
+      ALLOW_PLAINTEXT_LISTENER: "yes"
+    volumes:
+      - kafka-data:/bitnami/kafka
+    ports:
+      - "9092:9092"
+    healthcheck:
+      test: ["CMD-SHELL", "kafka-topics.sh --bootstrap-server localhost:9092 --list || exit 1"]
+      interval: 10s
+      timeout: 10s
+      retries: 15
+
+  # ------------------------------------------------------------ services --
+  auth-service:
+    build: { context: ., dockerfile: services/auth-service/Dockerfile }
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/auth
+      ENV: development
+    depends_on:
+      postgres: { condition: service_healthy }
+    ports: ["8001:8000"]
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request;urllib.request.urlopen('http://localhost:8000/health')\""]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  gateway:
+    build: { context: ., dockerfile: services/gateway/Dockerfile }
+    env_file: .env
+    depends_on:
+      redis: { condition: service_healthy }
+      auth-service: { condition: service_started }
+    ports: ["8080:8000"]
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request;urllib.request.urlopen('http://localhost:8000/health')\""]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  vendor-service:
+    build: { context: ., dockerfile: services/vendor-service/Dockerfile }
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/vendor
+    depends_on:
+      postgres: { condition: service_healthy }
+      kafka: { condition: service_healthy }
+    volumes:
+      - ./infrastructure/data/vendor-documents:/data/vendor-documents
+    ports: ["8002:8000"]
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request;urllib.request.urlopen('http://localhost:8000/health')\""]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  risk-service:
+    build: { context: ., dockerfile: services/risk-service/Dockerfile }
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/risk
+      VENDOR_SERVICE_URL: http://vendor-service:8000
+    depends_on:
+      postgres: { condition: service_healthy }
+      kafka: { condition: service_healthy }
+      redis: { condition: service_healthy }
+      vendor-service: { condition: service_started }
+    ports: ["8003:8000"]
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request;urllib.request.urlopen('http://localhost:8000/health')\""]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  sbom-service:
+    build: { context: ., dockerfile: services/sbom-service/Dockerfile }
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/sbom
+    depends_on:
+      postgres: { condition: service_healthy }
+    ports: ["8004:8000"]
+
+  compliance-service:
+    build: { context: ., dockerfile: services/compliance-service/Dockerfile }
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/compliance
+    depends_on:
+      postgres: { condition: service_healthy }
+    ports: ["8005:8000"]
+
+  monitoring-service:
+    build: { context: ., dockerfile: services/monitoring-service/Dockerfile }
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/monitoring
+    depends_on:
+      postgres: { condition: service_healthy }
+    ports: ["8006:8000"]
+
+  incident-service:
+    build: { context: ., dockerfile: services/incident-service/Dockerfile }
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/incident
+    depends_on:
+      postgres: { condition: service_healthy }
+    ports: ["8007:8000"]
+
+  frontend:
+    build: { context: ./frontend, dockerfile: Dockerfile.dev }
+    env_file: .env
+    environment:
+      VITE_API_BASE_URL: ${VITE_API_BASE_URL}
+    volumes:
+      - ./frontend:/app
+      - frontend-node-modules:/app/node_modules
+    ports: ["5173:5173"]
+    depends_on:
+      gateway: { condition: service_started }
+
+  # ---------------------------------------------------------------- tools --
+  seed:
+    build: { context: ., dockerfile: seed/Dockerfile }
+    profiles: ["tools"]
+    env_file: .env
+    environment:
+      GATEWAY_URL: http://gateway:8000
+      AUTH_SERVICE_URL: http://auth-service:8000
+      VENDOR_SERVICE_URL: http://vendor-service:8000
+      RISK_SERVICE_URL: http://risk-service:8000
+    depends_on:
+      gateway: { condition: service_started }
+      vendor-service: { condition: service_started }
+      risk-service: { condition: service_started }
+
+volumes:
+  postgres-data:
+  neo4j-data:
+  kafka-data:
+  frontend-node-modules:

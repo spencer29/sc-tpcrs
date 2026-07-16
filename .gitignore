@@ -1,0 +1,44 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.egg
+build/
+dist/
+.venv/
+venv/
+
+# Node / frontend
+node_modules/
+frontend/dist/
+frontend/.vite/
+npm-debug.log*
+
+# Env / secrets
+.env
+.env.*
+!.env.example
+
+# Docker
+*.pid
+
+# Data volumes (if bind-mounted locally)
+infrastructure/data/
+
+# Seed / test artifacts
+seed/.seed_marker
+*.sqlite3
+
+# ML artifacts (generated, not hand-written — but we DO commit the trained model + metrics, see risk-service/app/ml/README)
+services/risk-service/app/ml/*.pkl.tmp
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
