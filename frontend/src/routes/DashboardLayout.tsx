@@ -1,10 +1,10 @@
 import { Outlet } from "react-router-dom";
-import { NavBar } from "../components/NavBar";
+import { Sidebar } from "../components/Sidebar";
 
 export function DashboardLayout() {
   return (
     <div className="app-shell">
-      <NavBar />
+      <Sidebar />
       <main className="page-content">
         <Outlet />
       </main>

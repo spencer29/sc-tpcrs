@@ -24,13 +24,13 @@ export function TierBreakdownChart({ breakdown }: TierBreakdownChartProps) {
                 justifyContent: "space-between",
                 fontSize: "0.85rem",
                 marginBottom: 4,
-                color: "var(--text-secondary)",
+                color: "hsl(var(--muted-foreground))",
               }}
             >
               <span>{tier}</span>
               <span>{count}</span>
             </div>
-            <div style={{ height: 8, borderRadius: 4, background: "var(--gridline)", overflow: "hidden" }}>
+            <div style={{ height: 8, borderRadius: 4, background: "hsl(var(--border))", overflow: "hidden" }}>
               <div
                 style={{
                   width: `${pct}%`,

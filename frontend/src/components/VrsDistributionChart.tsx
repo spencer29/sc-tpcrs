@@ -12,16 +12,16 @@ export function VrsDistributionChart({ distribution }: VrsDistributionChartProps
     <div style={{ display: "flex", alignItems: "flex-end", gap: 12, height: 120 }}>
       {entries.map(([bucket, count]) => (
         <div key={bucket} style={{ flex: 1, textAlign: "center" }}>
-          <div style={{ fontSize: "0.8rem", color: "var(--text-secondary)", marginBottom: 4 }}>{count}</div>
+          <div style={{ fontSize: "0.8rem", color: "hsl(var(--muted-foreground))", marginBottom: 4 }}>{count}</div>
           <div
             style={{
               height: `${(count / max) * 80}px`,
               minHeight: count > 0 ? 4 : 0,
-              background: "var(--series-1)",
+              background: "hsl(var(--primary))",
               borderRadius: "4px 4px 0 0",
             }}
           />
-          <div style={{ fontSize: "0.75rem", color: "var(--text-muted)", marginTop: 4 }}>{bucket}</div>
+          <div style={{ fontSize: "0.75rem", color: "hsl(var(--muted-foreground))", marginTop: 4 }}>{bucket}</div>
         </div>
       ))}
     </div>

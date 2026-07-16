@@ -48,8 +48,30 @@ export function LoginPage() {
 
   return (
     <div style={{ display: "flex", justifyContent: "center", alignItems: "center", minHeight: "100vh" }}>
-      <div className="card" style={{ width: 360 }}>
-        <h2 style={{ marginTop: 0 }}>SC-TPCRS</h2>
+      <div className="card" style={{ width: 380 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 20 }}>
+          <div
+            style={{
+              width: 36,
+              height: 36,
+              borderRadius: "var(--radius)",
+              background: "hsl(var(--primary))",
+              color: "hsl(var(--primary-foreground))",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              fontWeight: 700,
+              fontSize: "0.9rem",
+              flexShrink: 0,
+            }}
+          >
+            SC
+          </div>
+          <div>
+            <div style={{ fontWeight: 700, fontSize: "1.05rem" }}>SC-TPCRS</div>
+            <div style={{ fontSize: "0.72rem", color: "hsl(var(--muted-foreground))" }}>Third-Party Risk Platform</div>
+          </div>
+        </div>
 
         {step === "credentials" && (
           <form onSubmit={handleCredentialsSubmit}>
@@ -84,7 +106,7 @@ export function LoginPage() {
 
         {step === "mfa" && (
           <form onSubmit={handleMfaSubmit}>
-            <p style={{ color: "var(--text-secondary)", fontSize: "0.9rem" }}>
+            <p style={{ color: "hsl(var(--muted-foreground))", fontSize: "0.85rem" }}>
               Enter the 6-digit code from your authenticator app. In development, fetch it via{" "}
               <code>GET /api/auth/dev/mfa-code?email=...</code>.
             </p>

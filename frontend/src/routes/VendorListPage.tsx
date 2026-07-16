@@ -1,10 +1,11 @@
+import { Plus } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { listVendors } from "../api/vendors";
-import { getLatestRiskScore } from "../api/risk";
 import { ApiError } from "../api/client";
-import { VendorTierBadge } from "../components/VendorTierBadge";
+import { getLatestRiskScore } from "../api/risk";
+import { listVendors } from "../api/vendors";
 import { RoleGate } from "../auth/RoleGate";
+import { VendorTierBadge } from "../components/VendorTierBadge";
 import type { Vendor } from "../types/vendor";
 
 function VrsCell({ vendorId }: { vendorId: string }) {
@@ -24,9 +25,9 @@ function VrsCell({ vendorId }: { vendorId: string }) {
     };
   }, [vendorId]);
 
-  if (vrs === "loading") return <span style={{ color: "var(--text-muted)" }}>...</span>;
-  if (vrs === null) return <span style={{ color: "var(--text-muted)" }}>&mdash;</span>;
-  return <span>{vrs.toFixed(1)}</span>;
+  if (vrs === "loading") return <span style={{ color: "hsl(var(--muted-foreground))" }}>...</span>;
+  if (vrs === null) return <span style={{ color: "hsl(var(--muted-foreground))" }}>&mdash;</span>;
+  return <span className="mono">{vrs.toFixed(1)}</span>;
 }
 
 export function VendorListPage() {
@@ -61,17 +62,20 @@ export function VendorListPage() {
 
   return (
     <div>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-        <h1>Vendors ({total})</h1>
+      <div className="page-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end" }}>
+        <div>
+          <h1 className="page-title">Vendors</h1>
+          <p className="page-subtitle">{total} vendor{total === 1 ? "" : "s"} in the registry</p>
+        </div>
         <RoleGate allow={["risk_officer", "admin"]}>
-          <Link to="/vendors/new" className="btn">
-            + Add Vendor
+          <Link to="/vendors/new" className="btn" style={{ display: "inline-flex", alignItems: "center", gap: 6, textDecoration: "none" }}>
+            <Plus size={15} /> Add Vendor
           </Link>
         </RoleGate>
       </div>
 
       <div className="card" style={{ marginBottom: 16, display: "flex", gap: 12 }}>
-        <input placeholder="Search by name..." value={search} onChange={(e) => setSearch(e.target.value)} />
+        <input placeholder="Search by name..." value={search} onChange={(e) => setSearch(e.target.value)} style={{ flex: 1 }} />
         <select value={tierFilter} onChange={(e) => setTierFilter(e.target.value)}>
           <option value="">All tiers</option>
           <option value="Critical">Critical</option>
@@ -126,7 +130,7 @@ export function VendorListPage() {
               ))}
               {vendors.length === 0 && (
                 <tr>
-                  <td colSpan={6} style={{ textAlign: "center", color: "var(--text-muted)" }}>
+                  <td colSpan={6} style={{ textAlign: "center", color: "hsl(var(--muted-foreground))" }}>
                     No vendors found.
                   </td>
                 </tr>

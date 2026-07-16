@@ -1,47 +1,51 @@
+/* Design tokens mirror proposal-web-app--sqmuelchunech.replit.app's compiled
+   CSS (:root block in its built assets/index-*.css) exactly -- same HSL
+   triplets, same dark-only color-scheme, same font stack. That app is
+   dark-mode-only (no light-theme block exists in its bundle), so this file
+   intentionally doesn't branch on prefers-color-scheme either. */
 :root {
-  color-scheme: light;
-  --surface-1: #fcfcfb;
-  --page-plane: #f9f9f7;
-  --text-primary: #0b0b0b;
-  --text-secondary: #52514e;
-  --text-muted: #898781;
-  --gridline: #e1e0d9;
-  --baseline: #c3c2b7;
-  --border: rgba(11, 11, 11, 0.1);
-  --series-1: #2a78d6;
-
-  --status-good: #0ca30c;
-  --status-warning: #fab219;
-  --status-serious: #ec835a;
-  --status-critical: #d03b3b;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root:where(:not([data-theme="light"])) {
-    color-scheme: dark;
-    --surface-1: #1a1a19;
-    --page-plane: #0d0d0d;
-    --text-primary: #ffffff;
-    --text-secondary: #c3c2b7;
-    --text-muted: #898781;
-    --gridline: #2c2c2a;
-    --baseline: #383835;
-    --border: rgba(255, 255, 255, 0.1);
-    --series-1: #3987e5;
-  }
-}
-
-:root[data-theme="dark"] {
   color-scheme: dark;
-  --surface-1: #1a1a19;
-  --page-plane: #0d0d0d;
-  --text-primary: #ffffff;
-  --text-secondary: #c3c2b7;
-  --text-muted: #898781;
-  --gridline: #2c2c2a;
-  --baseline: #383835;
-  --border: rgba(255, 255, 255, 0.1);
-  --series-1: #3987e5;
+
+  --background: 224 71% 4%;
+  --foreground: 210 40% 98%;
+  --border: 216 34% 17%;
+  --input: 216 34% 17%;
+  --ring: 212 100% 50%;
+
+  --card: 222 47% 11%;
+  --card-foreground: 210 40% 98%;
+  --popover: 222 47% 11%;
+  --popover-foreground: 210 40% 98%;
+
+  --primary: 212 100% 50%;
+  --primary-foreground: 210 40% 98%;
+  --secondary: 217 24% 27%;
+  --secondary-foreground: 210 40% 98%;
+  --muted: 217 24% 27%;
+  --muted-foreground: 215 20.2% 65.1%;
+  --accent: 217 24% 27%;
+  --accent-foreground: 210 40% 98%;
+  --destructive: 0 84.2% 60.2%;
+  --destructive-foreground: 210 40% 98%;
+
+  /* Risk-tier ramp -- reuses the source app's chart-1..4 hues (green ->
+     amber -> orange -> red), the conventional severity order. */
+  --tier-low: 142 71% 45%;
+  --tier-medium: 43 100% 50%;
+  --tier-high: 25 95% 53%;
+  --tier-critical: 0 84% 60%;
+
+  --sidebar: 224 71% 4%;
+  --sidebar-foreground: 215 20.2% 65.1%;
+  --sidebar-border: 216 34% 17%;
+  --sidebar-accent: 216 34% 17%;
+  --sidebar-accent-foreground: 210 40% 98%;
+
+  --font-sans: "Inter", system-ui, -apple-system, sans-serif;
+  --font-mono: "JetBrains Mono", "Fira Code", ui-monospace, monospace;
+  --radius: 0.5rem;
+
+  --sidebar-width: 248px;
 }
 
 * {
@@ -50,77 +54,247 @@
 
 body {
   margin: 0;
-  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
-  background: var(--page-plane);
-  color: var(--text-primary);
+  font-family: var(--font-sans);
+  background: hsl(var(--background));
+  color: hsl(var(--foreground));
+  -webkit-font-smoothing: antialiased;
+}
+
+code,
+.mono {
+  font-family: var(--font-mono);
 }
 
 a {
-  color: var(--series-1);
+  color: hsl(var(--primary));
 }
+
+/* ---------------------------------------------------------------- shell -- */
 
 .app-shell {
   min-height: 100vh;
   display: flex;
-  flex-direction: column;
 }
 
-.navbar {
+.sidebar {
+  width: var(--sidebar-width);
+  flex-shrink: 0;
+  background: hsl(var(--sidebar));
+  border-right: 1px solid hsl(var(--sidebar-border));
+  display: flex;
+  flex-direction: column;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+}
+
+.sidebar-brand {
+  padding: 20px 16px;
+  border-bottom: 1px solid hsl(var(--sidebar-border));
   display: flex;
   align-items: center;
-  gap: 24px;
-  padding: 12px 24px;
-  background: var(--surface-1);
-  border-bottom: 1px solid var(--border);
+  gap: 10px;
 }
 
-.navbar-brand {
-  font-weight: 700;
-  font-size: 1.1rem;
-}
-
-.navbar-links {
+.sidebar-brand-mark {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius);
+  background: hsl(var(--primary));
+  color: hsl(var(--primary-foreground));
   display: flex;
-  gap: 16px;
-  flex: 1;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 0.8rem;
+  flex-shrink: 0;
 }
 
-.navbar-links a {
+.sidebar-brand-title {
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: hsl(var(--foreground));
+  line-height: 1.2;
+}
+
+.sidebar-brand-subtitle {
+  font-size: 0.72rem;
+  color: hsl(var(--muted-foreground));
+}
+
+.sidebar-nav {
+  flex: 1;
+  padding: 12px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  overflow-y: auto;
+}
+
+.sidebar-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  border-radius: var(--radius);
+  color: hsl(var(--sidebar-foreground));
   text-decoration: none;
-  color: var(--text-secondary);
+  font-size: 0.875rem;
   font-weight: 500;
 }
 
-.navbar-links a.active {
-  color: var(--text-primary);
+.sidebar-nav-item:hover {
+  background: hsl(var(--sidebar-accent) / 0.6);
+  color: hsl(var(--sidebar-accent-foreground));
 }
 
-.navbar-user {
+.sidebar-nav-item.active {
+  background: hsl(var(--sidebar-accent));
+  color: hsl(var(--sidebar-accent-foreground));
+}
+
+.sidebar-nav-item svg {
+  width: 17px;
+  height: 17px;
+  flex-shrink: 0;
+}
+
+.sidebar-nav-item.disabled {
+  opacity: 0.45;
+  cursor: default;
+  pointer-events: none;
+}
+
+.sidebar-footer {
+  padding: 14px 16px;
+  border-top: 1px solid hsl(var(--sidebar-border));
+  font-size: 0.7rem;
+  color: hsl(var(--muted-foreground));
+  line-height: 1.5;
+}
+
+.sidebar-user {
+  padding: 12px 16px;
+  border-top: 1px solid hsl(var(--sidebar-border));
   display: flex;
   align-items: center;
-  gap: 12px;
-  color: var(--text-secondary);
-  font-size: 0.9rem;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 0.8rem;
+}
+
+.sidebar-user-name {
+  color: hsl(var(--foreground));
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sidebar-user-role {
+  color: hsl(var(--muted-foreground));
+  font-size: 0.72rem;
+  text-transform: capitalize;
 }
 
 .page-content {
   flex: 1;
-  padding: 24px;
-  max-width: 1200px;
+  padding: 28px 32px;
+  max-width: 1280px;
   width: 100%;
   margin: 0 auto;
+  min-width: 0;
 }
 
+.page-header {
+  margin-bottom: 24px;
+}
+
+.page-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin: 0 0 4px;
+  color: hsl(var(--foreground));
+}
+
+.page-subtitle {
+  color: hsl(var(--muted-foreground));
+  font-size: 0.875rem;
+  margin: 0;
+}
+
+/* ----------------------------------------------------------------- card -- */
+
 .card {
-  background: var(--surface-1);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 16px;
+  background: hsl(var(--card));
+  color: hsl(var(--card-foreground));
+  border: 1px solid hsl(var(--border));
+  border-radius: var(--radius);
+  padding: 20px;
 }
 
 .card + .card {
   margin-top: 16px;
 }
+
+.card-title {
+  font-size: 0.95rem;
+  font-weight: 600;
+  margin: 0 0 4px;
+  color: hsl(var(--foreground));
+}
+
+.card-description {
+  font-size: 0.8rem;
+  color: hsl(var(--muted-foreground));
+  margin: 0 0 16px;
+}
+
+/* ------------------------------------------------------------ stat tile -- */
+
+.stat-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.stat-tile {
+  background: hsl(var(--card));
+  border: 1px solid hsl(var(--border));
+  border-radius: var(--radius);
+  padding: 16px 18px;
+}
+
+.stat-tile-label {
+  font-size: 0.75rem;
+  color: hsl(var(--muted-foreground));
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.stat-tile-label svg {
+  width: 15px;
+  height: 15px;
+  opacity: 0.6;
+}
+
+.stat-tile-value {
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: hsl(var(--foreground));
+  font-family: var(--font-mono);
+}
+
+@media (max-width: 1000px) {
+  .stat-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* ---------------------------------------------------------------- table -- */
 
 table {
   width: 100%;
@@ -130,26 +304,39 @@ table {
 th,
 td {
   text-align: left;
-  padding: 8px 12px;
-  border-bottom: 1px solid var(--gridline);
-  font-size: 0.9rem;
+  padding: 10px 12px;
+  border-bottom: 1px solid hsl(var(--border));
+  font-size: 0.85rem;
 }
 
 th {
-  color: var(--text-muted);
+  color: hsl(var(--muted-foreground));
   font-weight: 600;
-  font-size: 0.8rem;
+  font-size: 0.72rem;
   text-transform: uppercase;
+  letter-spacing: 0.03em;
 }
 
+tbody tr:hover {
+  background: hsl(var(--accent) / 0.3);
+}
+
+/* ------------------------------------------------------------- controls -- */
+
 .btn {
-  border: 1px solid var(--border);
-  background: var(--series-1);
-  color: white;
-  border-radius: 6px;
+  border: 1px solid hsl(var(--primary));
+  background: hsl(var(--primary));
+  color: hsl(var(--primary-foreground));
+  border-radius: var(--radius);
   padding: 8px 16px;
-  font-size: 0.9rem;
+  font-size: 0.85rem;
+  font-weight: 500;
   cursor: pointer;
+  font-family: var(--font-sans);
+}
+
+.btn:hover {
+  filter: brightness(1.1);
 }
 
 .btn:disabled {
@@ -159,24 +346,39 @@ th {
 
 .btn-secondary {
   background: transparent;
-  color: var(--text-primary);
+  color: hsl(var(--foreground));
+  border: 1px solid hsl(var(--border));
+}
+
+.btn-secondary:hover {
+  background: hsl(var(--accent) / 0.5);
+  filter: none;
 }
 
 input,
 select,
 textarea {
-  border: 1px solid var(--baseline);
-  border-radius: 6px;
-  padding: 8px;
-  font-size: 0.9rem;
-  background: var(--surface-1);
-  color: var(--text-primary);
+  border: 1px solid hsl(var(--input));
+  border-radius: var(--radius);
+  padding: 8px 10px;
+  font-size: 0.85rem;
+  background: hsl(var(--card));
+  color: hsl(var(--foreground));
+  font-family: var(--font-sans);
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  outline: none;
+  border-color: hsl(var(--ring));
+  box-shadow: 0 0 0 2px hsl(var(--ring) / 0.35);
 }
 
 label {
   display: block;
-  font-size: 0.85rem;
-  color: var(--text-secondary);
+  font-size: 0.8rem;
+  color: hsl(var(--muted-foreground));
   margin-bottom: 4px;
 }
 
@@ -185,17 +387,19 @@ label {
 }
 
 .error-text {
-  color: var(--status-critical);
+  color: hsl(var(--destructive));
   font-size: 0.85rem;
 }
+
+/* ----------------------------------------------------------------- misc -- */
 
 .tier-badge {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  border-radius: 4px;
-  padding: 2px 8px;
-  font-size: 0.8rem;
+  border-radius: 999px;
+  padding: 2px 10px;
+  font-size: 0.75rem;
   font-weight: 600;
   color: white;
 }

@@ -78,13 +78,15 @@ export function VendorDetailPage() {
 
   return (
     <div>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "start" }}>
-        <div>
-          <h1 style={{ marginBottom: 4 }}>{vendor.name}</h1>
-          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-            <VendorTierBadge tier={vendor.overall_tier} />
-            <span style={{ color: "var(--text-secondary)" }}>{vendor.onboarding_state.replaceAll("_", " ")}</span>
-          </div>
+      <div className="page-header">
+        <h1 className="page-title" style={{ marginBottom: 8 }}>
+          {vendor.name}
+        </h1>
+        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+          <VendorTierBadge tier={vendor.overall_tier} />
+          <span style={{ color: "hsl(var(--muted-foreground))", fontSize: "0.85rem" }}>
+            {vendor.onboarding_state.replaceAll("_", " ")}
+          </span>
         </div>
       </div>
 
@@ -92,7 +94,7 @@ export function VendorDetailPage() {
 
       <div className="grid-2" style={{ marginTop: 16 }}>
         <div className="card">
-          <h3 style={{ marginTop: 0 }}>Overview</h3>
+          <h3 className="card-title">Overview</h3>
           <p>
             <strong>Legal entity:</strong> {vendor.legal_entity_name ?? "—"}
             <br />
@@ -160,7 +162,7 @@ export function VendorDetailPage() {
         </div>
 
         <div className="card">
-          <h3 style={{ marginTop: 0 }}>Risk Score</h3>
+          <h3 className="card-title">Risk Score</h3>
           {riskScore ? (
             <>
               <VrsGauge score={riskScore.vrs_score} tier={riskScore.tier} />
@@ -194,7 +196,7 @@ export function VendorDetailPage() {
               </table>
             </>
           ) : (
-            <p style={{ color: "var(--text-muted)" }}>No risk score computed yet.</p>
+            <p style={{ color: "hsl(var(--muted-foreground))" }}>No risk score computed yet.</p>
           )}
           <RoleGate allow={["risk_officer", "ciso", "admin"]}>
             <button
@@ -210,16 +212,16 @@ export function VendorDetailPage() {
       </div>
 
       <div className="card" style={{ marginTop: 16 }}>
-        <h3 style={{ marginTop: 0 }}>
+        <h3 className="card-title">
           Questionnaire {questionnaire && `(${questionnaire.status.replaceAll("_", " ")})`}
         </h3>
-        {!questionnaire && <p style={{ color: "var(--text-muted)" }}>No questionnaire generated yet.</p>}
+        {!questionnaire && <p style={{ color: "hsl(var(--muted-foreground))" }}>No questionnaire generated yet.</p>}
         {questionnaire && questionnaire.status !== "COMPLETED" && (
           <RoleGate allow={["risk_officer", "compliance_manager", "ciso", "admin"]}>
             <div>
               {questionnaire.questions.map((q) => (
                 <div key={q.code} style={{ marginBottom: 10 }}>
-                  <div style={{ fontSize: "0.85rem", color: "var(--text-secondary)" }}>
+                  <div style={{ fontSize: "0.85rem", color: "hsl(var(--muted-foreground))" }}>
                     {q.domain} &middot; {q.code}
                   </div>
                   <div style={{ marginBottom: 4 }}>{q.text}</div>
@@ -261,16 +263,16 @@ export function VendorDetailPage() {
           </RoleGate>
         )}
         {questionnaire && questionnaire.status === "COMPLETED" && (
-          <p style={{ color: "var(--text-secondary)" }}>
+          <p style={{ color: "hsl(var(--muted-foreground))" }}>
             All {questionnaire.questions.length} questions answered.
           </p>
         )}
       </div>
 
       <div className="card" style={{ marginTop: 16 }}>
-        <h3 style={{ marginTop: 0 }}>Documents</h3>
+        <h3 className="card-title">Documents</h3>
         {documents.length === 0 ? (
-          <p style={{ color: "var(--text-muted)" }}>No documents uploaded.</p>
+          <p style={{ color: "hsl(var(--muted-foreground))" }}>No documents uploaded.</p>
         ) : (
           <table>
             <thead>

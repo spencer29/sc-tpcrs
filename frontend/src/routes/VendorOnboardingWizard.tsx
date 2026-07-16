@@ -41,7 +41,10 @@ export function VendorOnboardingWizard() {
 
   return (
     <div>
-      <h1>Add Vendor</h1>
+      <div className="page-header">
+        <h1 className="page-title">Add Vendor</h1>
+        <p className="page-subtitle">Register a new third-party vendor and compute its initial risk tier.</p>
+      </div>
       <form onSubmit={handleSubmit} className="card" style={{ maxWidth: 560 }}>
         <div className="form-row">
           <label htmlFor="name">Vendor name</label>
@@ -90,8 +93,10 @@ export function VendorOnboardingWizard() {
           </div>
         </div>
 
-        <h3>Risk Tiering</h3>
-        <p style={{ color: "var(--text-secondary)", fontSize: "0.85rem" }}>
+        <h3 className="card-title" style={{ marginTop: 8 }}>
+          Risk Tiering
+        </h3>
+        <p className="card-description">
           Overall tier is computed automatically as the maximum of the three dimensions below.
         </p>
         <div className="grid-3">
