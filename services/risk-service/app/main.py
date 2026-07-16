@@ -5,7 +5,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 
 from .db import Base, engine
-from .routers import dashboard, health, risk
+from .routers import dashboard, health, internal, risk
 from .services.events import build_consumer
 
 _consumer = build_consumer()
@@ -27,3 +27,4 @@ app = FastAPI(title="SC-TPCRS risk-service", lifespan=lifespan)
 app.include_router(health.router)
 app.include_router(risk.router)
 app.include_router(dashboard.router)
+app.include_router(internal.router)

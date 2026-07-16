@@ -15,6 +15,7 @@ venv/
 node_modules/
 frontend/dist/
 frontend/.vite/
+frontend/tsconfig.tsbuildinfo
 npm-debug.log*
 
 # Env / secrets
@@ -30,6 +31,7 @@ infrastructure/data/
 
 # Seed / test artifacts
 seed/.seed_marker
+seed/SEED_RESULTS.md
 *.sqlite3
 
 # ML artifacts (generated, not hand-written — but we DO commit the trained model + metrics, see risk-service/app/ml/README)

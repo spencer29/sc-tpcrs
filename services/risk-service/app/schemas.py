@@ -42,3 +42,13 @@ class DashboardSummaryOut(BaseModel):
     tier_breakdown: dict[str, int]
     vrs_distribution: dict[str, int]
     top_risk_vendors: list[RiskScoreOut]
+
+
+class TechStackComponentIn(BaseModel):
+    component_name: str
+    component_version: str
+    ecosystem: str = "generic"
+
+
+class TechStackBulkIn(BaseModel):
+    components: list[TechStackComponentIn]

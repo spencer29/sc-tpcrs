@@ -1,0 +1,7 @@
+# Dev-only container image. No Node/npm is required on the host -- this is
+# the only way the frontend is built/run in this project (see README.md).
+FROM node:20-alpine
+
+WORKDIR /app
+
+CMD ["sh", "-c", "npm install && npm run dev -- --host 0.0.0.0"]
