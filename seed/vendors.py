@@ -5,6 +5,7 @@ lifecycle events are genuine, not faked."""
 from __future__ import annotations
 
 import random
+import re
 
 import httpx
 
@@ -33,6 +34,15 @@ def _weighted_tier(rng: random.Random) -> str:
     return rng.choices(TIER_VALUES, weights=TIER_WEIGHTS, k=1)[0]
 
 
+_EMAIL_UNSAFE_CHARS = re.compile(r"[^a-z0-9-]")
+
+
+def _email_slug(name: str) -> str:
+    slug = name.lower().replace(" ", "-")
+    slug = _EMAIL_UNSAFE_CHARS.sub("", slug)
+    return re.sub(r"-+", "-", slug).strip("-")
+
+
 def _create_vendor(client: httpx.Client, name: str, legal_entity_name: str, industry: str, country: str, rng: random.Random) -> dict:
     payload = {
         "name": name,
@@ -40,7 +50,7 @@ def _create_vendor(client: httpx.Client, name: str, legal_entity_name: str, indu
         "country": country,
         "industry": industry,
         "contact_name": "Compliance Contact",
-        "contact_email": f"compliance@{name.lower().replace(' ', '-')}.example",
+        "contact_email": f"compliance@{_email_slug(name)}.example",
         "data_access_scope": _weighted_tier(rng),
         "service_criticality": _weighted_tier(rng),
         "integration_depth": _weighted_tier(rng),

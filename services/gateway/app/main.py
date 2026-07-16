@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from fastapi import FastAPI, HTTPException, Request, Response, status
+from fastapi.middleware.cors import CORSMiddleware
 from sc_tpcrs_common.redis_cache import RedisCache
 
 from . import health
@@ -12,6 +13,17 @@ from .routing import is_public, resolve_upstream
 
 app = FastAPI(title="SC-TPCRS gateway")
 app.include_router(health.router)
+
+# The SPA (browser) calls this gateway cross-origin (:5173 -> :8080); without
+# this, every fetch() from the frontend is blocked by the browser even
+# though the API itself works fine (curl bypasses CORS entirely).
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=settings.cors_origins_list,
+    allow_credentials=False,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 cache = RedisCache(settings.redis_url)
 

@@ -37,6 +37,9 @@ seed/SEED_RESULTS.md
 # ML artifacts (generated, not hand-written — but we DO commit the trained model + metrics, see risk-service/app/ml/README)
 services/risk-service/app/ml/*.pkl.tmp
 
+# Local wheel-cache bootstrap (dev-environment network workaround only, never committed)
+services/risk-service/.wheels-cache/
+
 # OS
 .DS_Store
 Thumbs.db

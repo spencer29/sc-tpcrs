@@ -19,5 +19,16 @@ class Settings(BaseSettings):
     gateway_rate_limit_per_min: int = 100
     gateway_login_rate_limit_per_min: int = 5
 
+    # Comma-separated list. The frontend (browser) calls the gateway from a
+    # different origin (:5173 vs :8080) -- without CORS headers here, every
+    # fetch() from the SPA is silently blocked by the browser regardless of
+    # the API itself working fine (curl/server-to-server calls bypass CORS
+    # entirely, which is why this gap doesn't show up in backend testing).
+    cors_allowed_origins: str = "http://localhost:5173"
+
+    @property
+    def cors_origins_list(self) -> list[str]:
+        return [origin.strip() for origin in self.cors_allowed_origins.split(",") if origin.strip()]
+
 
 settings = Settings()

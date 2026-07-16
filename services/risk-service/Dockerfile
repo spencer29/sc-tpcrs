@@ -4,6 +4,13 @@ FROM python:3.11-slim AS base
 
 WORKDIR /app
 
+# Explicit timeout/retries: this service's dependencies include large
+# wheels (xgboost, scikit-learn, numpy) that have been observed to stall
+# indefinitely on a slow/flaky connection without these -- a bounded
+# per-request timeout lets pip's own retry logic recover instead of hanging.
+ENV PIP_DEFAULT_TIMEOUT=60
+ENV PIP_RETRIES=10
+
 COPY shared/py-common /shared/py-common
 RUN pip install --no-cache-dir /shared/py-common
 
