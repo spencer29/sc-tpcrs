@@ -3,7 +3,7 @@ from __future__ import annotations
 import os
 
 # Must be set before `app.config`/`app.main` are imported anywhere.
-os.environ.setdefault("JWT_SECRET", "test-secret-do-not-use-in-prod")
+os.environ.setdefault("JWT_SECRET", "test-secret-do-not-use-in-prod-32bytes-min")
 os.environ.setdefault("MFA_SECRET_ENC_KEY", "test-mfa-key")
 os.environ.setdefault("ENV", "development")
 os.environ.setdefault("DATABASE_URL", "sqlite+aiosqlite:///:memory:")

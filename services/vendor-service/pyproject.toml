@@ -1,7 +1,7 @@
 [project]
-name = "auth-service"
+name = "vendor-service"
 version = "0.1.0"
-description = "SC-TPCRS auth-service: login, MFA, JWT issuance."
+description = "SC-TPCRS vendor-service: vendor registry, risk tiering, onboarding workflow, questionnaires, documents."
 requires-python = ">=3.11"
 dependencies = [
     "fastapi>=0.111.0",
@@ -9,12 +9,9 @@ dependencies = [
     "sqlalchemy[asyncio]>=2.0.0",
     "asyncpg>=0.29.0",
     "alembic>=1.13.0",
-    "passlib[bcrypt]>=1.7.4",
-    "bcrypt<4.1.0",
-    "pyotp>=2.9.0",
-    "cryptography>=42.0.0",
     "pydantic-settings>=2.2.0",
-    "email-validator>=2.1.0",
+    "python-multipart>=0.0.9",
+    "aiofiles>=23.2.0",
 ]
 
 [project.optional-dependencies]

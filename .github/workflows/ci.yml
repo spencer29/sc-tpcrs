@@ -1,0 +1,47 @@
+name: CI
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+    branches: ["main"]
+
+jobs:
+  python-tests:
+    name: pytest (${{ matrix.service }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        service:
+          - shared/py-common
+          - services/auth-service
+          - services/gateway
+          - services/vendor-service
+          - services/risk-service
+          - services/sbom-service
+          - services/compliance-service
+          - services/monitoring-service
+          - services/incident-service
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install shared library
+        run: pip install -e shared/py-common[test]
+
+      - name: Install service (skip for shared lib, already installed above)
+        if: matrix.service != 'shared/py-common'
+        run: pip install -e "${{ matrix.service }}[test]"
+
+      - name: Run tests
+        run: python -m pytest ${{ matrix.service }}/tests -q
+
+  # No live Postgres/Kafka/Neo4j/Redis in CI this pass -- tests are designed
+  # to run against SQLite/fakeredis test doubles at the boundary instead.
+  # Frontend build/lint and full docker-compose integration tests, plus
+  # SAST/DAST/dependency scanning (Bandit, OWASP ZAP, Trivy) called for in
+  # the original blueprint, are explicitly deferred -- see SECURITY.md.

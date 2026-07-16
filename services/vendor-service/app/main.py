@@ -5,7 +5,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 
 from .db import Base, engine
-from .routers import auth, health
+from .routers import documents, health, questionnaires, vendors
 
 
 @asynccontextmanager
@@ -17,7 +17,9 @@ async def lifespan(_: FastAPI):
     yield
 
 
-app = FastAPI(title="SC-TPCRS auth-service", lifespan=lifespan)
+app = FastAPI(title="SC-TPCRS vendor-service", lifespan=lifespan)
 
 app.include_router(health.router)
-app.include_router(auth.router)
+app.include_router(vendors.router)
+app.include_router(questionnaires.router)
+app.include_router(documents.router)
