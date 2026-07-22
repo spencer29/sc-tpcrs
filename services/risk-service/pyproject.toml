@@ -18,14 +18,12 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-test = ["pytest>=8.0.0", "pytest-asyncio>=0.23.0", "aiosqlite>=0.20.0", "respx>=0.21.0"]
-
-[project.optional-dependencies]
 test = [
-    "pytest",
-    "pytest-asyncio",
-    "fakeredis",  # Add this line
-    # ... other test dependencies
+    "pytest>=8.0.0",
+    "pytest-asyncio>=0.23.0",
+    "aiosqlite>=0.20.0",
+    "respx>=0.21.0",
+    "fakeredis",
 ]
 
 [build-system]
