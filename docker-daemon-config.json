@@ -1,0 +1,10 @@
+{
+  "registry-mirrors": [
+    "https://mirror.gcr.io",
+    "https://hub-mirror.c.163.com",
+    "https://reg-mirror.qiniu.com"
+  ],
+  "max-concurrent-downloads": 3,
+  "max-concurrent-uploads": 3,
+  "live-restore": true
+}
