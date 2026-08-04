@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from collections.abc import AsyncGenerator
+
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.orm import DeclarativeBase
 
@@ -10,7 +12,9 @@ SessionLocal = async_sessionmaker(engine, expire_on_commit=False, class_=AsyncSe
 
 
 class Base(DeclarativeBase):
-    """No models yet -- schema lands in a future build pass when SBOM
-    ingestion is implemented. This engine/session scaffold exists so the
-    Dockerfile/compose topology and future migrations have a stable place to
-    attach to without re-plumbing the service."""
+    pass
+
+
+async def get_db() -> AsyncGenerator[AsyncSession, None]:
+    async with SessionLocal() as session:
+        yield session

@@ -1,0 +1,222 @@
+{
+  "system": {
+    "name": "SC-TPCRS (Supply Chain & Third-Party Cybersecurity Risk System)",
+    "status": "operational",
+    "version": "0.1.0",
+    "environment": "demo/development",
+    "containers_running": 13,
+    "containers_healthy": 13
+  },
+  "access": {
+    "frontend": "http://localhost:5173",
+    "gateway_api": "http://localhost:8080/api",
+    "neo4j_browser": "http://localhost:7474"
+  },
+  "services": [
+    {
+      "name": "gateway",
+      "port": 8080,
+      "status": "healthy",
+      "docs": "http://localhost:8080/docs"
+    },
+    {
+      "name": "auth-service",
+      "port": 8001,
+      "status": "healthy",
+      "docs": "http://localhost:8001/docs"
+    },
+    {
+      "name": "vendor-service",
+      "port": 8002,
+      "status": "healthy",
+      "docs": "http://localhost:8002/docs"
+    },
+    {
+      "name": "risk-service",
+      "port": 8003,
+      "status": "healthy",
+      "docs": "http://localhost:8003/docs"
+    },
+    {
+      "name": "sbom-service",
+      "port": 8004,
+      "status": "healthy",
+      "docs": "http://localhost:8004/docs"
+    },
+    {
+      "name": "compliance-service",
+      "port": 8005,
+      "status": "healthy",
+      "docs": "http://localhost:8005/docs"
+    },
+    {
+      "name": "monitoring-service",
+      "port": 8006,
+      "status": "healthy",
+      "docs": "http://localhost:8006/docs"
+    },
+    {
+      "name": "incident-service",
+      "port": 8007,
+      "status": "healthy",
+      "docs": "http://localhost:8007/docs"
+    }
+  ],
+  "users": [
+    {
+      "id": 1,
+      "email": "admin1@sc-tpcrs.demo",
+      "password": "Demo1234!",
+      "role": "admin",
+      "permissions": [
+        "user_management",
+        "system_configuration",
+        "vendor_onboarding",
+        "risk_assessment",
+        "compliance_review",
+        "incident_response"
+      ],
+      "mfa_required": true,
+      "mfa_code_endpoint": "http://localhost:8080/api/auth/dev/mfa-code?email=admin1@sc-tpcrs.demo",
+      "status": "active"
+    },
+    {
+      "id": 2,
+      "email": "admin2@sc-tpcrs.demo",
+      "password": "Demo1234!",
+      "role": "admin",
+      "permissions": [
+        "user_management",
+        "system_configuration",
+        "vendor_onboarding",
+        "risk_assessment",
+        "compliance_review",
+        "incident_response"
+      ],
+      "mfa_required": true,
+      "mfa_code_endpoint": "http://localhost:8080/api/auth/dev/mfa-code?email=admin2@sc-tpcrs.demo",
+      "status": "active"
+    },
+    {
+      "id": 3,
+      "email": "ciso1@sc-tpcrs.demo",
+      "password": "Demo1234!",
+      "role": "ciso",
+      "permissions": [
+        "security_oversight",
+        "risk_assessment_review",
+        "compliance_monitoring",
+        "incident_escalation",
+        "threat_intelligence"
+      ],
+      "mfa_required": true,
+      "mfa_code_endpoint": "http://localhost:8080/api/auth/dev/mfa-code?email=ciso1@sc-tpcrs.demo",
+      "status": "active"
+    },
+    {
+      "id": 4,
+      "email": "ciso2@sc-tpcrs.demo",
+      "password": "Demo1234!",
+      "role": "ciso",
+      "permissions": [
+        "security_oversight",
+        "risk_assessment_review",
+        "compliance_monitoring",
+        "incident_escalation",
+        "threat_intelligence"
+      ],
+      "mfa_required": true,
+      "mfa_code_endpoint": "http://localhost:8080/api/auth/dev/mfa-code?email=ciso2@sc-tpcrs.demo",
+      "status": "active"
+    },
+    {
+      "id": 5,
+      "email": "risk.officer1@sc-tpcrs.demo",
+      "password": "Demo1234!",
+      "role": "risk_officer",
+      "permissions": [
+        "vendor_risk_assessment",
+        "questionnaire_review",
+        "risk_scoring",
+        "vendor_onboarding",
+        "risk_tiering"
+      ],
+      "mfa_required": true,
+      "mfa_code_endpoint": "http://localhost:8080/api/auth/dev/mfa-code?email=risk.officer1@sc-tpcrs.demo",
+      "status": "active"
+    },
+    {
+      "id": 6,
+      "email": "risk.officer2@sc-tpcrs.demo",
+      "password": "Demo1234!",
+      "role": "risk_officer",
+      "permissions": [
+        "vendor_risk_assessment",
+        "questionnaire_review",
+        "risk_scoring",
+        "vendor_onboarding",
+        "risk_tiering"
+      ],
+      "mfa_required": true,
+      "mfa_code_endpoint": "http://localhost:8080/api/auth/dev/mfa-code?email=risk.officer2@sc-tpcrs.demo",
+      "status": "active"
+    },
+    {
+      "id": 7,
+      "email": "compliance1@sc-tpcrs.demo",
+      "password": "Demo1234!",
+      "role": "compliance_manager",
+      "permissions": [
+        "compliance_monitoring",
+        "document_review",
+        "regulatory_alignment",
+        "audit_trail_review",
+        "compliance_reporting"
+      ],
+      "mfa_required": true,
+      "mfa_code_endpoint": "http://localhost:8080/api/auth/dev/mfa-code?email=compliance1@sc-tpcrs.demo",
+      "status": "active"
+    },
+    {
+      "id": 8,
+      "email": "compliance2@sc-tpcrs.demo",
+      "password": "Demo1234!",
+      "role": "compliance_manager",
+      "permissions": [
+        "compliance_monitoring",
+        "document_review",
+        "regulatory_alignment",
+        "audit_trail_review",
+        "compliance_reporting"
+      ],
+      "mfa_required": true,
+      "mfa_code_endpoint": "http://localhost:8080/api/auth/dev/mfa-code?email=compliance2@sc-tpcrs.demo",
+      "status": "active"
+    }
+  ],
+  "demo_data": {
+    "vendors_total": 20,
+    "vendors_critical": 9,
+    "vendors_high": 6,
+    "vendors_medium": 5,
+    "risk_scores_computed": 12,
+    "demo_vendor_with_cve": "left-pad@1.0.0",
+    "cve_severity": "CVSS 9.8"
+  },
+  "authentication": {
+    "scheme": "JWT",
+    "mfa": "TOTP (6-digit code)",
+    "session_timeout_minutes": 15,
+    "refresh_token_days": 7,
+    "idle_timeout_minutes": 30,
+    "rate_limit_general": "100 req/min",
+    "rate_limit_auth": "5 req/min"
+  },
+  "login_flow": {
+    "step_1": "POST /auth/login with email & password",
+    "step_2": "Receive bridge_token",
+    "step_3": "GET /auth/dev/mfa-code?email=<email>",
+    "step_4": "POST /auth/mfa/verify with bridge_token & otp_code",
+    "step_5": "Receive access_token & refresh_token"
+  }
+}

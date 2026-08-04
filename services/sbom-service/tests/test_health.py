@@ -10,4 +10,9 @@ async def test_health():
     async with AsyncClient(transport=transport, base_url="http://test") as client:
         resp = await client.get("/health")
     assert resp.status_code == 200
-    assert resp.json() == {"status": "ok", "service": "sbom-service"}
+    body = resp.json()
+    assert body["status"] == "ok"
+    assert body["service"] == "sbom-service"
+    # Extended health surfaces the Neo4j mirror's reachability; disabled in
+    # unit tests (NEO4J_ENABLED=false) so it degrades to False, not an error.
+    assert body["neo4j"] is False

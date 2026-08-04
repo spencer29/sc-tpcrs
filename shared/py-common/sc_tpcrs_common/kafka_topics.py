@@ -11,6 +11,7 @@ RISK_ANOMALY_ALERTS = "risk.anomaly.alerts"
 RISK_THREAT_INTEL_MATCHES = "risk.threat_intel.matches"
 SBOM_INGESTION_EVENTS = "sbom.ingestion.events"
 CVE_ALERTS = "cve.alerts"
+COMPLIANCE_ASSESSMENT_EVENTS = "compliance.assessment.events"
 INCIDENT_EVENTS = "incident.events"
 
 ALL_TOPICS = [
@@ -20,5 +21,6 @@ ALL_TOPICS = [
     RISK_THREAT_INTEL_MATCHES,
     SBOM_INGESTION_EVENTS,
     CVE_ALERTS,
+    COMPLIANCE_ASSESSMENT_EVENTS,
     INCIDENT_EVENTS,
 ]

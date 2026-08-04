@@ -1,7 +1,7 @@
 [project]
 name = "sbom-service"
 version = "0.1.0"
-description = "SC-TPCRS sbom-service (health-only skeleton -- SBOM/SPDX/CycloneDX ingestion and Neo4j graph analysis deferred to a future build pass)."
+description = "SC-TPCRS sbom-service -- CycloneDX/SPDX ingestion, CVE cross-referencing, and Neo4j dependency-graph analysis (Module 3)."
 requires-python = ">=3.11"
 dependencies = [
     "fastapi>=0.111.0",
@@ -9,10 +9,19 @@ dependencies = [
     "sqlalchemy[asyncio]>=2.0.0",
     "asyncpg>=0.29.0",
     "pydantic-settings>=2.2.0",
+    "httpx>=0.27.0",  # service-to-service call to vendor-service for name/tier
+    # sc-tpcrs-common is installed from /shared/py-common by the Dockerfile
+    # (not declared here -- it is not published to PyPI), matching every other
+    # service's build.
+    # SBOM parsing / graph analytics
+    "packageurl-python>=0.15.0",  # PURL normalisation (Module 3 requirement)
+    "defusedxml>=0.7.1",          # XXE-safe CycloneDX XML parsing
+    "neo4j>=5.20.0",              # official driver, async
+    "networkx>=3.2",             # betweenness/PageRank/Louvain (GDS stand-in, documented deviation)
 ]
 
 [project.optional-dependencies]
-test = ["pytest>=8.0.0", "pytest-asyncio>=0.23.0", "httpx>=0.27.0"]
+test = ["pytest>=8.0.0", "pytest-asyncio>=0.23.0", "httpx>=0.27.0", "aiosqlite>=0.20.0"]
 
 [build-system]
 requires = ["setuptools>=68.0"]
@@ -23,3 +32,9 @@ include = ["app*"]
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
+# One event loop for the whole session. The tests share a single module-level
+# StaticPool aiosqlite connection; pytest-asyncio >= 1.0 otherwise spins up a
+# fresh loop per test, which strands that connection's worker thread on a dead
+# loop and deadlocks the suite. Session-scoped loops keep the connection valid.
+asyncio_default_fixture_loop_scope = "session"
+asyncio_default_test_loop_scope = "session"

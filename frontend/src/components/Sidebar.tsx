@@ -23,9 +23,9 @@ interface NavItem {
 const NAV_ITEMS: NavItem[] = [
   { to: "/", label: "Dashboard", icon: LayoutDashboard, enabled: true },
   { to: "/vendors", label: "Vendors", icon: Building2, enabled: true },
-  { to: "/assessments", label: "Assessments", icon: ClipboardCheck, enabled: false },
-  { to: "/supply-chain", label: "Supply Chain", icon: Network, enabled: false },
-  { to: "/compliance", label: "Compliance", icon: ShieldCheck, enabled: false },
+  { to: "/assessments", label: "Assessments", icon: ClipboardCheck, enabled: true },
+  { to: "/supply-chain", label: "Supply Chain", icon: Network, enabled: true },
+  { to: "/compliance", label: "Compliance", icon: ShieldCheck, enabled: true },
   { to: "/incidents", label: "Incidents", icon: AlertTriangle, enabled: false },
   { to: "/alerts", label: "Alerts", icon: Bell, enabled: false },
   { to: "/reports", label: "Reports", icon: FileText, enabled: false },

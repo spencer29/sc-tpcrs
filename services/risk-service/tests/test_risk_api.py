@@ -33,10 +33,14 @@ async def test_compute_and_get_latest_risk_score(client):
     assert get_resp.json()["vendor_id"] == vendor_id
 
 
-async def test_get_risk_score_before_any_compute_returns_404(client):
+async def test_get_risk_score_before_any_compute_returns_null(client):
+    # "Not scored yet" is a normal empty state, surfaced as 200 with a null
+    # body rather than a 404 (which would conflate it with a missing resource
+    # and make the browser log a console error on every vendor-list render).
     vendor_id = str(uuid.uuid4())
     resp = await client.get(f"/risk/vendors/{vendor_id}", headers=auth_headers(role="analyst"))
-    assert resp.status_code == 404
+    assert resp.status_code == 200
+    assert resp.json() is None
 
 
 async def test_history_endpoint_returns_chronological_entries(client):

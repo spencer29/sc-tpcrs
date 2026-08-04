@@ -1,13 +1,40 @@
-"""Compliance monitoring and reporting (control-library gap analysis,
-regulator-ready reports) is deferred to a future build pass (see the
-blueprint's Module 5). This skeleton exists only so the gateway's routing
-table and docker-compose topology are complete end-to-end."""
+"""SC-TPCRS compliance-service (Module 5).
+
+Third-party compliance monitoring against a multi-framework control library
+(ISO 27001:2022, PCI DSS v4.0, SOC 2, NDPR/NDPA, CBN): control-catalogue
+lookup, per-vendor assessment with weighted scoring, gap analysis rolled up by
+domain, and regulator-ready reporting. Consumes vendor lifecycle events to
+auto-baseline vendors and emits compliance.assessment.events for downstream
+monitoring/incident services.
+"""
 
 from __future__ import annotations
 
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 
-from .routers import health
+from .db import Base, engine
+from .routers import compliance, controls, dashboard, health
+from .services.events import build_consumer
 
-app = FastAPI(title="SC-TPCRS compliance-service (skeleton)")
+_consumer = build_consumer()
+
+
+@asynccontextmanager
+async def lifespan(_: FastAPI):
+    # Dev convenience: create tables if they don't exist yet (Alembic
+    # migrations remain the source of truth for staging/production).
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+    _consumer.start_background()
+    yield
+    await _consumer.stop()
+
+
+app = FastAPI(title="SC-TPCRS compliance-service", lifespan=lifespan)
+
 app.include_router(health.router)
+app.include_router(controls.router)
+app.include_router(compliance.router)
+app.include_router(dashboard.router)

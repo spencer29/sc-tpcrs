@@ -15,7 +15,7 @@ function VrsCell({ vendorId }: { vendorId: string }) {
     let cancelled = false;
     getLatestRiskScore(vendorId)
       .then((score) => {
-        if (!cancelled) setVrs(score.vrs_score);
+        if (!cancelled) setVrs(score ? score.vrs_score : null);
       })
       .catch(() => {
         if (!cancelled) setVrs(null);

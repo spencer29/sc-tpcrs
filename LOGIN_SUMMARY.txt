@@ -1,0 +1,223 @@
+================================================================================
+          SC-TPCRS: LOGIN DETAILS FOR ALL STAKEHOLDERS
+================================================================================
+
+SYSTEM STATUS: CHECKMARK ALL SYSTEMS OPERATIONAL (13/13 containers running)
+
+================================================================================
+                    KEY QUICK LOGIN GUIDE
+================================================================================
+
+STEP 1: Open Frontend
+   → http://localhost:5173
+
+STEP 2: Select Your Role & Enter Credentials
+
+   ┌─────────────────────────────────────────────────────┐
+   │ EMAIL (pick one from below)                         │
+   │ PASSWORD: Demo1234!  (all users share this)         │
+   └─────────────────────────────────────────────────────┘
+
+STEP 3: Generate MFA Code
+   → Run: curl http://localhost:8080/api/auth/dev/mfa-code?email=YOUR_EMAIL
+   → Copy the 6-digit code
+
+STEP 4: Complete Login
+   → Enter MFA code
+   → SUCCESS! You're in!
+
+================================================================================
+                    USER ACCOUNTS (8 Total)
+================================================================================
+
+ADMINISTRATORS (Full System Access)
+   1. admin1@sc-tpcrs.demo
+   2. admin2@sc-tpcrs.demo
+
+CISOs (Security Oversight)
+   3. ciso1@sc-tpcrs.demo
+   4. ciso2@sc-tpcrs.demo
+
+RISK OFFICERS (Vendor Assessment)
+   5. risk.officer1@sc-tpcrs.demo
+   6. risk.officer2@sc-tpcrs.demo
+
+COMPLIANCE MANAGERS (Compliance Monitoring)
+   7. compliance1@sc-tpcrs.demo
+   8. compliance2@sc-tpcrs.demo
+
+PASSWORD FOR ALL: Demo1234!
+
+================================================================================
+                    SERVICE ACCESS POINTS
+================================================================================
+
+Frontend Dashboard          http://localhost:5173
+Gateway API                 http://localhost:8080/api
+Auth Service API            http://localhost:8001/docs
+Vendor Service API          http://localhost:8002/docs
+Risk Service API            http://localhost:8003/docs
+SBOM Service API            http://localhost:8004/docs
+Compliance Service API      http://localhost:8005/docs
+Monitoring Service API      http://localhost:8006/docs
+Incident Service API        http://localhost:8007/docs
+Neo4j Graph Browser         http://localhost:7474
+
+================================================================================
+                    MFA CODE GENERATION COMMANDS
+================================================================================
+
+Admin Users:
+  curl http://localhost:8080/api/auth/dev/mfa-code?email=admin1@sc-tpcrs.demo
+  curl http://localhost:8080/api/auth/dev/mfa-code?email=admin2@sc-tpcrs.demo
+
+CISO Users:
+  curl http://localhost:8080/api/auth/dev/mfa-code?email=ciso1@sc-tpcrs.demo
+  curl http://localhost:8080/api/auth/dev/mfa-code?email=ciso2@sc-tpcrs.demo
+
+Risk Officer Users:
+  curl http://localhost:8080/api/auth/dev/mfa-code?email=risk.officer1@sc-tpcrs.demo
+  curl http://localhost:8080/api/auth/dev/mfa-code?email=risk.officer2@sc-tpcrs.demo
+
+Compliance Manager Users:
+  curl http://localhost:8080/api/auth/dev/mfa-code?email=compliance1@sc-tpcrs.demo
+  curl http://localhost:8080/api/auth/dev/mfa-code?email=compliance2@sc-tpcrs.demo
+
+Response Example:
+  {"email":"user@sc-tpcrs.demo","otp_code":"123456"}
+  
+  Copy the otp_code value into the MFA field
+
+================================================================================
+                    DEMO DATA PRE-LOADED
+================================================================================
+
+✓ 20 Vendors
+   - Critical tier: 9 vendors
+   - High tier: 6 vendors
+   - Medium tier: 5 vendors
+
+✓ 12 Risk Scores (Computed)
+
+✓ Demo Vendor with CVE
+   - Name: left-pad version 1.0.0
+   - Severity: CVSS 9.8
+
+✓ 8 Demo Users (Ready to login immediately)
+
+✓ 7 PostgreSQL Databases (Initialized and Seeded)
+
+================================================================================
+                    WHAT EACH ROLE CAN DO
+================================================================================
+
+ADMIN
+  CHECKMARK Manage users
+  CHECKMARK System configuration
+  CHECKMARK View all data
+  CHECKMARK Manage vendors
+  CHECKMARK Review risks
+  CHECKMARK Monitor compliance
+
+CISO
+  CHECKMARK Security oversight
+  CHECKMARK Review risk assessments
+  CHECKMARK Monitor threats
+  CHECKMARK Escalate incidents
+  CHECKMARK Verify compliance
+  WARNING Cannot manage users
+
+RISK OFFICER
+  CHECKMARK Assess vendors
+  CHECKMARK Create questionnaires
+  CHECKMARK Calculate risk scores
+  CHECKMARK Tier vendors
+  CHECKMARK View compliance
+  WARNING Cannot manage users
+
+COMPLIANCE MANAGER
+  CHECKMARK Monitor compliance
+  CHECKMARK Review documents
+  CHECKMARK Verify alignment
+  CHECKMARK View audit trails
+  WARNING Cannot approve risk scores
+  WARNING Cannot manage users
+
+================================================================================
+                    TROUBLESHOOTING
+================================================================================
+
+Cannot reach localhost?
+  → Try: http://127.0.0.1:5173
+  → Restart Docker Desktop
+  → Check firewall not blocking ports 5173, 8080
+
+MFA code doesn't work?
+  → Generate a new one (codes expire in 30 seconds)
+  → Verify system time is correct
+  → Check you copied the full 6-digit code
+
+Connection refused?
+  → Run: docker compose ps
+  → Check all containers show "Up"
+  → Restart: docker compose down then docker compose up -d
+
+Wrong credentials?
+  → Verify email spelling exactly as shown above
+  → Confirm password is "Demo1234!" (case-sensitive)
+  → Try a different account
+
+================================================================================
+                    DOCUMENTATION FILES
+================================================================================
+
+MASTER_ACCESS_GUIDE.md           - Comprehensive guide (START HERE)
+LOGIN_QUICK_REFERENCE.md         - Quick lookup table
+LOGIN_DETAILS_ALL_STAKEHOLDERS.md - Full credential details and API access
+stakeholder_credentials.csv      - CSV export for spreadsheets
+system_config.json               - JSON for developers/automation
+TROUBLESHOOTING.md               - Diagnostic steps
+CODEBASE_ASSESSMENT.md           - Technical architecture
+SYSTEM_READY.md                  - Getting started guide
+
+================================================================================
+                    SYSTEM HEALTH CHECK
+================================================================================
+
+Containers Running: 13 of 13 (ALL OPERATIONAL)
+  - Gateway (8080)             - Healthy
+  - Auth Service (8001)        - Healthy
+  - Vendor Service (8002)      - Healthy
+  - Risk Service (8003)        - Healthy
+  - SBOM Service (8004)        - Running
+  - Compliance Service (8005)  - Running
+  - Monitoring Service (8006)  - Running
+  - Incident Service (8007)    - Running
+  - Frontend (5173)            - Running
+  - PostgreSQL (5432)          - Healthy
+  - Redis (6379)               - Healthy
+  - Kafka (9092)               - Healthy
+  - Neo4j (7474)               - Healthy
+
+API Responses: Verified
+  - Gateway health check: 200 OK
+  - Frontend dev server: Ready
+  - All services accepting connections
+
+Database: Ready
+  - PostgreSQL initialized
+  - 7 databases created
+  - 20 vendors seeded
+  - 8 users configured
+
+================================================================================
+
+NEXT STEP: Open http://localhost:5173 and login with your credentials!
+
+For issues, see TROUBLESHOOTING.md or check the service logs:
+  docker compose logs -f
+
+Generated: 2026-07-22
+Status: Production-ready for demo/development use
+
+================================================================================

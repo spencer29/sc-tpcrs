@@ -35,20 +35,23 @@ async def compute_risk_score(
     return row
 
 
-@router.get("/{vendor_id}", response_model=RiskScoreOut)
+@router.get("/{vendor_id}", response_model=RiskScoreOut | None)
 async def get_latest_risk_score(
     vendor_id: uuid.UUID, db: AsyncSession = Depends(get_db), _user: TokenPayload = Depends(get_current_user)
-) -> RiskScoreHistory:
+) -> RiskScoreHistory | None:
+    # "Not scored yet" is a normal state, not an error: a freshly-onboarded
+    # vendor legitimately has no score until one is computed. Returning 404
+    # here both conflates that with a genuinely missing resource and makes the
+    # browser log a console error on every vendor-list render (one request per
+    # row, and not every vendor is scored). Return 200 with a null body so the
+    # caller can render an empty cell without a failed request.
     stmt = (
         select(RiskScoreHistory)
         .where(RiskScoreHistory.vendor_id == vendor_id)
         .order_by(RiskScoreHistory.computed_at.desc())
         .limit(1)
     )
-    row = (await db.execute(stmt)).scalar_one_or_none()
-    if row is None:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "No risk score computed for this vendor yet")
-    return row
+    return (await db.execute(stmt)).scalar_one_or_none()
 
 
 @router.get("/{vendor_id}/history", response_model=RiskScoreHistoryOut)

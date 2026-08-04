@@ -28,12 +28,21 @@ app.add_middleware(
 cache = RedisCache(settings.redis_url)
 
 
-@app.api_route("/api/{full_path:path}", methods=["GET", "POST", "PUT", "PATCH", "DELETE"])
+@app.api_route("/api/{full_path:path}", methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"])
 async def catch_all(full_path: str, request: Request) -> Response:
     resolved = resolve_upstream(full_path)
     if resolved is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Unknown route")
     base_url, _prefix = resolved
+
+    # CORS preflight: the browser sends an unauthenticated OPTIONS before many
+    # real requests. It carries no bearer token, does no work upstream, and
+    # metering it would make every browser call cost two counter increments
+    # (the preflight + the real request) -- which is a large part of why an SPA
+    # trips the limiter while curl never does. Answer it here and return before
+    # auth/rate-limiting. CORSMiddleware has already attached the ACL headers.
+    if request.method == "OPTIONS":
+        return Response(status_code=status.HTTP_204_NO_CONTENT)
 
     public = is_public(full_path)
     user = None

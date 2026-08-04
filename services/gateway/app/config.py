@@ -16,7 +16,11 @@ class Settings(BaseSettings):
     monitoring_service_url: str = "http://monitoring-service:8000"
     incident_service_url: str = "http://incident-service:8000"
 
-    gateway_rate_limit_per_min: int = 100
+    # A browser SPA legitimately fans out many calls per page (e.g. the vendor
+    # list renders one risk-score request per row). 100/min is fine for a
+    # server-to-server client but too low for one interactive user clicking
+    # through pages -- overridable via GATEWAY_RATE_LIMIT_PER_MIN.
+    gateway_rate_limit_per_min: int = 300
     gateway_login_rate_limit_per_min: int = 5
 
     # Comma-separated list. The frontend (browser) calls the gateway from a
