@@ -34,5 +34,8 @@ async def lifespan(_: FastAPI):
 app = FastAPI(title="SC-TPCRS incident-service", lifespan=lifespan)
 
 app.include_router(health.router)
-app.include_router(incidents.router)
+# dashboard MUST be registered before the incidents router: its static path
+# /incidents/dashboard would otherwise be captured by /incidents/{incident_id}
+# and fail UUID parsing (422). FastAPI matches routes in registration order.
 app.include_router(dashboard.router)
+app.include_router(incidents.router)

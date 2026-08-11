@@ -9,8 +9,9 @@ This is an **iterative build** on top of the original blueprint spec. Each
 pass adds one or more modules end-to-end (backend + tests + frontend slice)
 in the blueprint's mandated order (1→2→3→5→4→6). Every design decision and
 scope trade-off is documented inline in code, in [SECURITY.md](SECURITY.md),
-and — for Modules 3, 4 and 5 — in the [Module 3 notes](#module-3--sbom--supply-chain-graph-notes),
-[Module 4 notes](#module-4--continuous-monitoring-notes) and [Module 5 notes](#module-5--compliance-monitoring-notes)
+and — for Modules 3, 4, 5 and 6 — in the [Module 3 notes](#module-3--sbom--supply-chain-graph-notes),
+[Module 4 notes](#module-4--continuous-monitoring-notes), [Module 5 notes](#module-5--compliance-monitoring-notes)
+and [Module 6 notes](#module-6--incident-response-integration-notes)
 below. Read those before assuming a "full" feature is present.
 
 | Module | Service | Status |
@@ -22,8 +23,8 @@ below. Read those before assuming a "full" feature is present.
 | 3. Supply Chain Visibility / SBOM | `sbom-service` | Full — CycloneDX/SPDX ingestion, CVE cross-ref, dependency graph |
 | 4. Continuous Monitoring | `monitoring-service` | Full — periodic posture sweeps, drift/exposure/threat-intel alerting, cross-module event reactions |
 | 5. Compliance Monitoring | `compliance-service` | Full — 281-control library, gap analysis, regulator-ready reports |
-| 6. Incident Response Integration | `incident-service` | Health-only skeleton (deferred) |
-| Frontend | `frontend` (React + TS + Vite) | Login, Vendor List/Detail/Onboarding, Risk Dashboard, Supply Chain, Compliance, Monitoring/Alerts |
+| 6. Incident Response Integration | `incident-service` | Full — auto-opens incidents from monitoring alerts, lifecycle/SLA tracking, CBN/NDPC regulatory notification drafting |
+| Frontend | `frontend` (React + TS + Vite) | Login, Vendor List/Detail/Onboarding, Risk Dashboard, Supply Chain, Compliance, Monitoring/Alerts, Incidents |
 
 Scoped-down numbers relative to the original spec (all documented in-code,
 not oversights): a 36-question security questionnaire bank (not 240), 20
@@ -99,7 +100,8 @@ make test-<service>        # run one service's pytest suite in a container
 ## Testing
 
 Each fully-built service (`auth-service`, `gateway`, `vendor-service`,
-`risk-service`, `sbom-service`, `compliance-service`, `monitoring-service`) has
+`risk-service`, `sbom-service`, `compliance-service`, `monitoring-service`,
+`incident-service`) has
 its own pytest suite covering core business logic: tiering boundaries,
 state-machine transitions, the VRS weighted formula, JWT issuance/expiry/role
 checks, rate-limit thresholds, (for `sbom-service`) SBOM parsing, PURL
@@ -110,7 +112,10 @@ override precedence, and the full assessment → gap-analysis → report API flo
 (26 tests), and (for `monitoring-service`) the exposure-index math, deterministic
 posture collection, drift/alert-engine thresholds, alert dedup/escalation,
 Kafka-event→alert mapping, the full sweep flow, and the alert acknowledge/resolve
-API (45 tests). This pass
+API (45 tests), and (for `incident-service`) the lifecycle state machine and
+SLA/severity gating, CBN/NDPC notification drafting, incident create/transition/
+dedup logic, monitoring-alert→incident auto-open, and the full incident REST API
+including RBAC, illegal-transition 409s, and the response dashboard (48 tests). This pass
 targets realistic coverage of that business logic (roughly 60-70%), **not**
 a repo-wide 80% target — DB-heavy integration paths and the frontend are
 verified manually per the walkthrough in `SECURITY.md`'s companion plan
@@ -353,6 +358,80 @@ The five frameworks were chosen for the Nigerian fintech context per the bluepri
 A full-library assessment (`framework=ALL`) evaluates all 281 controls and produces
 per-framework scores in the `framework_scores` field, so a single run covers every
 required regime.
+
+## Module 6 — Incident Response Integration notes
+
+`incident-service` is the terminal module in the event chain: it turns high/critical
+monitoring alerts into tracked incidents, drives their response lifecycle with an
+append-only timeline and an SLA clock, and drafts the Nigerian regulatory
+notifications each incident warrants. It *consumes* `monitoring.alerts` (the hub
+`monitoring-service` publishes to) and *publishes* `incident.events`. Key endpoints
+(all behind the gateway at `/api/incidents/...`):
+
+- `GET /incidents/dashboard` — response posture roll-up: open incidents, open by
+  severity and category, SLA-breached count, pending regulatory notifications, and
+  mean-time-to-contain. Aggregates over this service's own rows only (same convention
+  as the risk/compliance/monitoring dashboards — no cross-service HTTP fan-out).
+- `GET /incidents` (filter by `vendor_id` / `status` / `severity`) and
+  `POST /incidents` (writer-gated) — list and manually open incidents.
+- `GET /incidents/{id}` — full detail: the incident, its timeline, and its drafted
+  notifications.
+- `POST /incidents/{id}/status` — advance the lifecycle (writer-gated; an illegal
+  transition returns 409). `POST /incidents/{id}/assign` and
+  `POST /incidents/{id}/notes` record assignment and analyst notes.
+- `GET /incidents/{id}/timeline` and `GET /incidents/{id}/notifications` — the
+  append-only history and the regulatory drafts on their own.
+
+Read access (list/detail/dashboard/timeline/notifications) is open to any
+authenticated role; opening, transitioning, assigning and noting are gated to
+`risk_officer` / `ciso` / `admin` (compliance managers consume incidents, they don't
+drive response). Every open/transition/assign/note is written to the hash-chained
+`audit_log`.
+
+**Lifecycle state machine.** Incidents move `open → investigating → contained →
+resolved → closed`. Limited backward transitions are allowed for real-world response
+(a contained/resolved incident can be reopened to `investigating` when a finding
+recurs); `closed` is terminal. The rules live as pure, unit-tested functions in
+`services/lifecycle.py` and are mirrored in the frontend's action buttons. Reaching
+`contained`/`resolved`/`closed` stamps the corresponding timestamp (closing without an
+explicit resolve stamps both), which feeds mean-time-to-contain.
+
+**SLA clock.** `sla_due_at = opened_at + window`, where the window is keyed off
+severity (Critical 24h — mirroring the CBN reporting expectation — High 72h, Medium
+168h, Low 336h). An incident is *breached* once it passes its due time while still
+active; resolved/closed incidents never breach. This is a computed field
+(`is_sla_breached`), so it stays correct without a background job mutating rows.
+
+**Auto-open from monitoring alerts.** The Kafka consumer reacts to `monitoring.alert*`
+events: any alert at/above the configured `auto_open_min_severity` (default **High**)
+auto-opens an incident, **deduplicated on the originating alert id** (`source_ref`) so
+a re-published alert never spawns a duplicate. The alert's `alert_type` maps to an
+incident category (e.g. `THREAT_INTEL_MATCH → THREAT_INTEL`, `CRITICAL_CVE →
+VULNERABILITY`). Medium/Low alerts are left to the monitoring queue unless an analyst
+promotes them manually. All Kafka is fail-soft (the shared producer/consumer no-op
+when no broker is reachable), so unit tests and offline demos need no broker.
+
+**Regulatory notifications (CBN + NDPC).** On open, the service drafts the
+notifications the incident warrants:
+
+- **CBN** — the Central Bank of Nigeria expects supervised financial institutions to
+  report material cyber incidents promptly (24h window). Drafted for every
+  High/Critical incident.
+- **NDPC** — under the Nigeria Data Protection Act 2023 (and the earlier NDPR), a
+  personal-data breach must be notified to the Nigeria Data Protection Commission
+  within 72h. Drafted when personal data is involved (category `DATA_BREACH` or an
+  explicit analyst flag on manual open).
+
+Drafting is idempotent per regulator and the deterministic draft text is testable and
+demoable. **Deviation from spec:** there is no live regulator API integration — a
+notification is generated as a reviewable draft with a deadline and a draft/submitted
+status, not a real filing. The generators are isolated in `services/notifications.py`,
+so wiring a real submission channel behind the same interface is a localised change.
+
+**Event flow.** incident-service *consumes* `monitoring.alerts` and *publishes*
+`incident.events` (`incident.opened`, `incident.status_changed`, `incident.resolved`)
+so downstream consumers (dashboards, notifiers) can react. The shared Kafka consumer
+dispatches every subscribed topic to one handler, mirroring the other services.
 
 ## Further reading
 

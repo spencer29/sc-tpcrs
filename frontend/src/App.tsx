@@ -4,6 +4,7 @@ import { RequireAuth } from "./auth/RequireAuth";
 import { AssessmentsPage } from "./routes/AssessmentsPage";
 import { CompliancePage } from "./routes/CompliancePage";
 import { DashboardLayout } from "./routes/DashboardLayout";
+import { IncidentsPage } from "./routes/IncidentsPage";
 import { LoginPage } from "./routes/LoginPage";
 import { MonitoringPage } from "./routes/MonitoringPage";
 import { RiskDashboardPage } from "./routes/RiskDashboardPage";
@@ -30,6 +31,7 @@ export function App() {
           <Route path="assessments" element={<AssessmentsPage />} />
           <Route path="compliance" element={<CompliancePage />} />
           <Route path="alerts" element={<MonitoringPage />} />
+          <Route path="incidents" element={<IncidentsPage />} />
           <Route path="supply-chain" element={<SupplyChainPage />} />
           <Route path="vendors/new" element={<VendorOnboardingWizard />} />
           <Route path="vendors/:vendorId" element={<VendorDetailPage />} />

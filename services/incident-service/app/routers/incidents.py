@@ -111,6 +111,9 @@ async def assign_incident(
         raise HTTPException(status_code=404, detail="incident not found")
     await incident_service.assign_incident(db, incident, assignee=body.assignee, actor=user.sub, note=body.note)
     await db.commit()
+    # Refresh so the server-side onupdate `updated_at` is reloaded before we
+    # serialize (an expired attribute would otherwise lazy-load in sync context).
+    await db.refresh(incident)
     return await _detail(db, incident_id)
 
 
@@ -126,6 +129,7 @@ async def add_note(
         raise HTTPException(status_code=404, detail="incident not found")
     await incident_service.add_note(db, incident, message=body.message, actor=user.sub)
     await db.commit()
+    await db.refresh(incident)
     return await _detail(db, incident_id)
 
 
