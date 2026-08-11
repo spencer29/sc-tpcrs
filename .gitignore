@@ -40,6 +40,9 @@ services/risk-service/app/ml/*.pkl.tmp
 # Local wheel-cache bootstrap (dev-environment network workaround only, never committed)
 services/risk-service/.wheels-cache/
 
+# Scratch / throwaway (dev-only test runners, ad-hoc logs, manual API pokes)
+tmp/
+
 # OS
 .DS_Store
 Thumbs.db
