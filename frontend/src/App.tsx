@@ -5,6 +5,7 @@ import { AssessmentsPage } from "./routes/AssessmentsPage";
 import { CompliancePage } from "./routes/CompliancePage";
 import { DashboardLayout } from "./routes/DashboardLayout";
 import { LoginPage } from "./routes/LoginPage";
+import { MonitoringPage } from "./routes/MonitoringPage";
 import { RiskDashboardPage } from "./routes/RiskDashboardPage";
 import { SupplyChainPage } from "./routes/SupplyChainPage";
 import { VendorDetailPage } from "./routes/VendorDetailPage";
@@ -28,6 +29,7 @@ export function App() {
           <Route path="vendors" element={<VendorListPage />} />
           <Route path="assessments" element={<AssessmentsPage />} />
           <Route path="compliance" element={<CompliancePage />} />
+          <Route path="alerts" element={<MonitoringPage />} />
           <Route path="supply-chain" element={<SupplyChainPage />} />
           <Route path="vendors/new" element={<VendorOnboardingWizard />} />
           <Route path="vendors/:vendorId" element={<VendorDetailPage />} />

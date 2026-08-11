@@ -66,7 +66,11 @@ export function CompliancePage() {
         setVendors(vresp.items);
         if (vresp.items.length) setSelectedVendor(vresp.items[0].id);
       })
-      .catch((err) => setError(err instanceof ApiError ? err.message : "Failed to load compliance data"))
+      .catch((err) => {
+        const errorMsg = err instanceof ApiError ? err.message : err instanceof Error ? err.message : String(err);
+        console.error("Compliance page error:", err);
+        setError(`Failed to load compliance data: ${errorMsg}`);
+      })
       .finally(() => setLoading(false));
   }, []);
 
@@ -104,7 +108,7 @@ export function CompliancePage() {
         </p>
       </div>
 
-      {error && <p className="error-text">{error}</p>}
+      {error && <div className="error-text" style={{ whiteSpace: "pre-wrap", fontFamily: "monospace", fontSize: "0.8rem" }}>{error}</div>}
 
       {loading ? (
         <p>Loading...</p>
@@ -141,6 +145,11 @@ export function CompliancePage() {
             <div>
               {viewMode === "dashboard" && dashboard && (
                 <DashboardView dashboard={dashboard} frameworks={frameworks} />
+              )}
+              {viewMode === "dashboard" && !dashboard && (
+                <div className="card">
+                  <p style={{ color: "hsl(var(--muted-foreground))" }}>No data loaded yet.</p>
+                </div>
               )}
               {viewMode === "gaps" && gapAnalysis && <GapAnalysisView analysis={gapAnalysis} />}
               {viewMode === "report" && report && <ReportView report={report} />}

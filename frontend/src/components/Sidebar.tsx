@@ -26,9 +26,9 @@ const NAV_ITEMS: NavItem[] = [
   { to: "/assessments", label: "Assessments", icon: ClipboardCheck, enabled: true },
   { to: "/supply-chain", label: "Supply Chain", icon: Network, enabled: true },
   { to: "/compliance", label: "Compliance", icon: ShieldCheck, enabled: true },
-  { to: "/incidents", label: "Incidents", icon: AlertTriangle, enabled: false },
-  { to: "/alerts", label: "Alerts", icon: Bell, enabled: false },
-  { to: "/reports", label: "Reports", icon: FileText, enabled: false },
+  { to: "/incidents", label: "Incidents", icon: AlertTriangle, enabled: true },
+  { to: "/alerts", label: "Alerts", icon: Bell, enabled: true },
+  { to: "/reports", label: "Reports", icon: FileText, enabled: true },
 ];
 
 export function Sidebar() {
@@ -53,14 +53,6 @@ export function Sidebar() {
       <nav className="sidebar-nav">
         {NAV_ITEMS.map((item) => {
           const Icon = item.icon;
-          if (!item.enabled) {
-            return (
-              <span key={item.to} className="sidebar-nav-item disabled" title="Coming soon">
-                <Icon size={17} />
-                {item.label}
-              </span>
-            );
-          }
           return (
             <NavLink
               key={item.to}
