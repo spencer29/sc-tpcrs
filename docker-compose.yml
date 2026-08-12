@@ -236,6 +236,25 @@ services:
     depends_on:
       gateway: { condition: service_started }
 
+  # Production frontend: multi-stage build -> nginx static serve, opt-in via
+  # `docker compose --profile prod up frontend-prod`. Serves the built SPA on
+  # :8081 and reverse-proxies /api -> gateway (same-origin, no CORS). The
+  # default `frontend` (dev, :5173) is untouched and still starts by default.
+  frontend-prod:
+    profiles: ["prod"]
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        # Same-origin by default; override in .env for a cross-origin deploy.
+        VITE_API_BASE_URL: ${FRONTEND_PROD_API_BASE_URL:-/api}
+    environment:
+      # Where nginx proxies /api/. The compose gateway listens on :8000.
+      API_UPSTREAM: http://gateway:8000
+    ports: ["8081:80"]
+    depends_on:
+      gateway: { condition: service_started }
+
   # ---------------------------------------------------------------- tools --
   seed:
     build: { context: ., dockerfile: seed/Dockerfile }

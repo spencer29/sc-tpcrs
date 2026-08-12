@@ -1,6 +1,11 @@
 # Dev-only container image. No Node/npm is required on the host -- this is
 # the only way the frontend is built/run in this project (see README.md).
-FROM node:20-alpine
+#
+# Base image is pinned to the current Node LTS on Alpine. Node 20 reached EOL
+# (Apr 2026) and its tag accumulated critical/high CVEs; Node 22 LTS on a
+# current Alpine base clears those and is fully supported by Vite 6 / React 18.
+FROM node:22-alpine
+
 
 WORKDIR /app
 

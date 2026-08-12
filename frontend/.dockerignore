@@ -1,0 +1,19 @@
+# Build context hygiene for the production image (frontend/Dockerfile).
+# Keep the build fast and prevent host artifacts from clobbering the
+# freshly-installed node_modules during `COPY . .`.
+node_modules
+dist
+npm-debug.log*
+
+# Dockerfiles / compose are not needed inside the image
+Dockerfile
+Dockerfile.*
+.dockerignore
+
+# Local env + editor noise (VITE_ vars are passed as build args instead)
+.env
+.env.*
+!.env.example
+*.local
+.vscode
+.idea

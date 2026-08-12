@@ -115,6 +115,9 @@ async def test_cve_impact_returns_affected_component_across_portfolio(client):
     assert "left-pad" in names
     lp = next(c for c in affected if c["component_name"] == "left-pad")
     assert any(v["cve_id"] == "CVE-2024-99999" for v in lp["vulnerabilities"])
+    # vendor_id is exposed so the UI can pivot from an affected component to its
+    # vendor (the CVE-Impact panel links each hit to /vendors/<vendor_id>).
+    assert lp["vendor_id"] == DEMO_VENDOR_ID
 
 
 async def test_vendor_document_and_component_listings(client):

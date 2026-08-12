@@ -12,6 +12,7 @@ export interface SbomVulnerability {
 
 export interface SbomComponent {
   id: string;
+  vendor_id: string;
   component_name: string;
   version: string;
   ecosystem: string;

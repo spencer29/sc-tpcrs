@@ -38,6 +38,7 @@ class ComponentOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: uuid.UUID
+    vendor_id: uuid.UUID
     component_name: str
     version: str
     ecosystem: str
