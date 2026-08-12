@@ -1,0 +1,320 @@
+# =============================================================================
+# SC-TPCRS -- Render.com Blueprint (Infrastructure as Code)
+# =============================================================================
+# One-file deployment of the 8-service platform + Postgres + Redis, tailored to
+# THIS repo's exact stack. Apply with: Render Dashboard -> Blueprints -> New
+# Blueprint Instance (point it at this repo), or `render blueprint launch`.
+#
+# Faithful mapping of docker-compose.yml -> Render. Where a compose dependency
+# has no managed Render equivalent (Neo4j, Kafka), the app's built-in fail-soft
+# behaviour is used and the deviation is documented in RENDER_DEPLOY.md. All
+# synchronous REST flows -- including Demo Scenario 1 -- remain fully functional.
+#
+# Topology:
+#   frontend (static site, public) --> gateway (web, public) --> 7 backends
+#   (pserv, private network only) --> Postgres (7 DBs on 1 instance) + Redis
+#
+# Two make-or-break Render behaviours this blueprint relies on (both verified):
+#   * PORT override: every process binds :8000 (uvicorn --port 8000), so PORT
+#     is pinned to 8000 rather than Render's default 10000.
+#   * One Postgres instance hosts all 7 databases. Render's connectionString
+#     points at the default DB (auth); each service rewrites the scheme to
+#     +asyncpg and swaps in its own DB name at start-up (see dockerCommand).
+#
+# NOTE: change `region:` consistently across ALL entries -- private networking
+# and the internal database URL only work when everything shares one region.
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# Shared, non-referential config (literals + one generated secret).
+# Env groups may NOT contain fromService/fromDatabase/sync:false entries, so
+# only static values live here; Redis/Postgres URLs are wired per-service below.
+# The 7 backend URLs are deterministic (private hostname == service name, fixed
+# port 8000), so they are plain literals shared by every service.
+# -----------------------------------------------------------------------------
+envVarGroups:
+  - name: sctpcrs-shared
+    envVars:
+      # Shared HS256 signing secret. jwt_shared.py reads JWT_SECRET from the
+      # environment and REQUIRES an identical value in every service. A group
+      # generateValue produces ONE random value shared by all members.
+      # (Fallback: if an account rejects generateValue inside a group, delete
+      #  this entry and set JWT_SECRET once in the group via the dashboard.)
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_ACCESS_TTL_MINUTES
+        value: "15"
+      - key: JWT_REFRESH_TTL_DAYS
+        value: "7"
+      # No managed Kafka on Render. A valid-but-unreachable broker makes the
+      # fail-soft wrappers no-op fast (connection refused, not a DNS hang).
+      # See RENDER_DEPLOY.md "Kafka" for the (documented) event-chain impact.
+      - key: KAFKA_BOOTSTRAP_SERVERS
+        value: "localhost:9092"
+      # Inter-service base URLs (gateway ROUTE_TABLE + internal callers).
+      # Private hostname == the Render service `name`; every backend binds 8000.
+      - key: AUTH_SERVICE_URL
+        value: "http://sctpcrs-auth:8000"
+      - key: VENDOR_SERVICE_URL
+        value: "http://sctpcrs-vendor:8000"
+      - key: RISK_SERVICE_URL
+        value: "http://sctpcrs-risk:8000"
+      - key: SBOM_SERVICE_URL
+        value: "http://sctpcrs-sbom:8000"
+      - key: COMPLIANCE_SERVICE_URL
+        value: "http://sctpcrs-compliance:8000"
+      - key: MONITORING_SERVICE_URL
+        value: "http://sctpcrs-monitoring:8000"
+      - key: INCIDENT_SERVICE_URL
+        value: "http://sctpcrs-incident:8000"
+
+# -----------------------------------------------------------------------------
+# Managed Postgres -- ONE instance, default database `auth`. The other six
+# databases (vendor, risk, sbom, compliance, monitoring, incident) are created
+# once after first apply via scripts/render_createdbs.sh (Render can't declare
+# multiple databases per instance). Each service composes its own DATABASE_URL.
+# -----------------------------------------------------------------------------
+databases:
+  - name: sctpcrs-postgres
+    databaseName: auth
+    user: sctpcrs
+    plan: free                 # demo tier; upgrade for anything real
+    postgresMajorVersion: "16"
+    region: oregon
+
+# -----------------------------------------------------------------------------
+# Services: 1 Key Value (Redis), 1 gateway (web), 7 backends (pserv), 1 static.
+# -----------------------------------------------------------------------------
+services:
+  # --- Redis (Key Value) : rate-limit counters + risk dashboard cache --------
+  - name: sctpcrs-redis
+    type: keyvalue
+    ipAllowList: []            # required; [] = reachable only on the private network
+    plan: free
+    region: oregon
+    maxmemoryPolicy: allkeys-lru
+
+  # === API GATEWAY (public entrypoint) =======================================
+  - name: sctpcrs-gateway
+    type: web
+    runtime: docker
+    region: oregon
+    plan: starter              # a free web service spins down; the gateway should stay warm
+    dockerfilePath: services/gateway/Dockerfile
+    dockerContext: .           # repo root -- Dockerfiles COPY shared/py-common
+    healthCheckPath: /health
+    envVars:
+      - fromGroup: sctpcrs-shared
+      - key: PORT              # pin Render's expected port to what uvicorn binds
+        value: "8000"
+      - key: REDIS_URL
+        fromService:
+          name: sctpcrs-redis
+          type: keyvalue
+          property: connectionString
+      - key: GATEWAY_RATE_LIMIT_PER_MIN
+        value: "300"
+      - key: GATEWAY_LOGIN_RATE_LIMIT_PER_MIN
+        value: "5"
+      # CORS must list the SPA's real origin. Set to the static site's URL after
+      # first deploy (Render shows it), then redeploy the gateway. Kept as a
+      # prompt (sync:false) to avoid a gateway<->frontend reference cycle.
+      - key: CORS_ALLOWED_ORIGINS
+        sync: false
+
+  # === BACKENDS (private services -- no public URL) ==========================
+  # Each: pin PORT=8000, pull the shared Postgres connectionString as DB_CONN,
+  # then at start-up rewrite scheme -> postgresql+asyncpg and swap the trailing
+  # DB name to APP_DB_NAME before running migrations + uvicorn.
+
+  - name: sctpcrs-auth
+    type: pserv
+    runtime: docker
+    region: oregon
+    plan: starter
+    dockerfilePath: services/auth-service/Dockerfile
+    dockerContext: .
+    healthCheckPath: /health
+    dockerCommand: >-
+      sh -c 'base="${DB_CONN#postgresql://}"; base="${base%/*}"; export DATABASE_URL="postgresql+asyncpg://${base}/${APP_DB_NAME}"; alembic upgrade head && exec uvicorn app.main:app --host 0.0.0.0 --port 8000'
+    envVars:
+      - fromGroup: sctpcrs-shared
+      - key: PORT
+        value: "8000"
+      - key: APP_DB_NAME
+        value: auth
+      - key: DB_CONN
+        fromDatabase:
+          name: sctpcrs-postgres
+          property: connectionString
+      # Enables /auth/dev/seed-users + MFA-code lookup used by the demo seed job
+      # and Demo Scenario 1 login. Harden to "production" for a real deployment
+      # (see RENDER_DEPLOY.md "Security notes").
+      - key: ENV
+        value: development
+      # Fernet key (32-byte url-safe base64). generateValue can't produce a
+      # valid Fernet key, so it is entered once in the dashboard. Generate with:
+      #   python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
+      - key: MFA_SECRET_ENC_KEY
+        sync: false
+
+  - name: sctpcrs-vendor
+    type: pserv
+    runtime: docker
+    region: oregon
+    plan: starter
+    dockerfilePath: services/vendor-service/Dockerfile
+    dockerContext: .
+    healthCheckPath: /health
+    dockerCommand: >-
+      sh -c 'base="${DB_CONN#postgresql://}"; base="${base%/*}"; export DATABASE_URL="postgresql+asyncpg://${base}/${APP_DB_NAME}"; alembic upgrade head && exec uvicorn app.main:app --host 0.0.0.0 --port 8000'
+    envVars:
+      - fromGroup: sctpcrs-shared
+      - key: PORT
+        value: "8000"
+      - key: APP_DB_NAME
+        value: vendor
+      - key: DB_CONN
+        fromDatabase:
+          name: sctpcrs-postgres
+          property: connectionString
+
+  - name: sctpcrs-risk
+    type: pserv
+    runtime: docker
+    region: oregon
+    plan: starter
+    dockerfilePath: services/risk-service/Dockerfile
+    dockerContext: .
+    healthCheckPath: /health
+    dockerCommand: >-
+      sh -c 'base="${DB_CONN#postgresql://}"; base="${base%/*}"; export DATABASE_URL="postgresql+asyncpg://${base}/${APP_DB_NAME}"; alembic upgrade head && exec uvicorn app.main:app --host 0.0.0.0 --port 8000'
+    envVars:
+      - fromGroup: sctpcrs-shared
+      - key: PORT
+        value: "8000"
+      - key: APP_DB_NAME
+        value: risk
+      - key: DB_CONN
+        fromDatabase:
+          name: sctpcrs-postgres
+          property: connectionString
+      # risk-service caches its dashboard aggregate in Redis.
+      - key: REDIS_URL
+        fromService:
+          name: sctpcrs-redis
+          type: keyvalue
+          property: connectionString
+
+  - name: sctpcrs-sbom
+    type: pserv
+    runtime: docker
+    region: oregon
+    plan: starter
+    dockerfilePath: services/sbom-service/Dockerfile
+    dockerContext: .
+    healthCheckPath: /health
+    # sbom-service has NO alembic dir -- it creates tables in-app on startup.
+    dockerCommand: >-
+      sh -c 'base="${DB_CONN#postgresql://}"; base="${base%/*}"; export DATABASE_URL="postgresql+asyncpg://${base}/${APP_DB_NAME}"; exec uvicorn app.main:app --host 0.0.0.0 --port 8000'
+    envVars:
+      - fromGroup: sctpcrs-shared
+      - key: PORT
+        value: "8000"
+      - key: APP_DB_NAME
+        value: sbom
+      - key: DB_CONN
+        fromDatabase:
+          name: sctpcrs-postgres
+          property: connectionString
+      # No managed Neo4j on Render. sbom-service is the only Neo4j writer and
+      # is fully fail-soft: disabling the mirror keeps CycloneDX/SPDX ingestion
+      # and CVE cross-referencing intact; /api/sbom/graph returns an empty graph
+      # (not an error). See RENDER_DEPLOY.md "Neo4j" to opt back in.
+      - key: NEO4J_ENABLED
+        value: "false"
+
+  - name: sctpcrs-compliance
+    type: pserv
+    runtime: docker
+    region: oregon
+    plan: starter
+    dockerfilePath: services/compliance-service/Dockerfile
+    dockerContext: .
+    healthCheckPath: /health
+    dockerCommand: >-
+      sh -c 'base="${DB_CONN#postgresql://}"; base="${base%/*}"; export DATABASE_URL="postgresql+asyncpg://${base}/${APP_DB_NAME}"; alembic upgrade head && exec uvicorn app.main:app --host 0.0.0.0 --port 8000'
+    envVars:
+      - fromGroup: sctpcrs-shared
+      - key: PORT
+        value: "8000"
+      - key: APP_DB_NAME
+        value: compliance
+      - key: DB_CONN
+        fromDatabase:
+          name: sctpcrs-postgres
+          property: connectionString
+
+  - name: sctpcrs-monitoring
+    type: pserv
+    runtime: docker
+    region: oregon
+    plan: starter
+    dockerfilePath: services/monitoring-service/Dockerfile
+    dockerContext: .
+    healthCheckPath: /health
+    dockerCommand: >-
+      sh -c 'base="${DB_CONN#postgresql://}"; base="${base%/*}"; export DATABASE_URL="postgresql+asyncpg://${base}/${APP_DB_NAME}"; alembic upgrade head && exec uvicorn app.main:app --host 0.0.0.0 --port 8000'
+    envVars:
+      - fromGroup: sctpcrs-shared
+      - key: PORT
+        value: "8000"
+      - key: APP_DB_NAME
+        value: monitoring
+      - key: DB_CONN
+        fromDatabase:
+          name: sctpcrs-postgres
+          property: connectionString
+
+  - name: sctpcrs-incident
+    type: pserv
+    runtime: docker
+    region: oregon
+    plan: starter
+    dockerfilePath: services/incident-service/Dockerfile
+    dockerContext: .
+    healthCheckPath: /health
+    dockerCommand: >-
+      sh -c 'base="${DB_CONN#postgresql://}"; base="${base%/*}"; export DATABASE_URL="postgresql+asyncpg://${base}/${APP_DB_NAME}"; alembic upgrade head && exec uvicorn app.main:app --host 0.0.0.0 --port 8000'
+    envVars:
+      - fromGroup: sctpcrs-shared
+      - key: PORT
+        value: "8000"
+      - key: APP_DB_NAME
+        value: incident
+      - key: DB_CONN
+        fromDatabase:
+          name: sctpcrs-postgres
+          property: connectionString
+
+  # === FRONTEND (React SPA -- static site, public) ===========================
+  - name: sctpcrs-frontend
+    type: web
+    runtime: static
+    region: oregon
+    rootDir: frontend
+    # VITE_API_BASE_URL is baked at build time. Compose it from the gateway's
+    # public hostname (one-directional reference -> no cycle).
+    buildCommand: npm ci && VITE_API_BASE_URL="https://$GATEWAY_HOST/api" npm run build
+    staticPublishPath: dist
+    envVars:
+      - key: GATEWAY_HOST
+        fromService:
+          name: sctpcrs-gateway
+          type: web
+          property: host
+    # SPA client-side routing: serve index.html for any unmatched path.
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
