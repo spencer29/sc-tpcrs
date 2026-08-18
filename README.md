@@ -97,6 +97,20 @@ make train-anomaly-model   # retrain risk-service's XGBoost anomaly model
 make test-<service>        # run one service's pytest suite in a container
 ```
 
+## Production deployment
+
+The Quickstart above is the dev stack (all ports exposed, hot-reload Vite,
+single-worker services). Two hardened paths exist for going further:
+
+- **Single-host Docker** — apply the [docker-compose.prod.yml](docker-compose.prod.yml)
+  overlay on top of the base file: closes every host port except the gateway
+  (`:8080`) and the nginx-served SPA (`:8081`), adds `restart: unless-stopped`,
+  runs multi-worker uvicorn, and swaps the Vite dev server for a static nginx
+  build. Neo4j and Kafka stay in-cluster, so the graph and event choreography
+  are fully live. See **[PROD_DOCKER.md](PROD_DOCKER.md)**.
+- **Managed cloud (Render)** — web services + managed Postgres, per the
+  [render.yaml](render.yaml) blueprint. See **[RENDER_DEPLOY.md](RENDER_DEPLOY.md)**.
+
 ## Testing
 
 Each fully-built service (`auth-service`, `gateway`, `vendor-service`,

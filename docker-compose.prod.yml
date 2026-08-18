@@ -1,0 +1,124 @@
+name: sc-tpcrs
+
+# Production overlay for a single-host Docker deployment. Apply it ON TOP of the
+# base file -- the base file is unchanged and still runs the full dev stack on
+# its own (`docker compose up`). Bring the production stack up with:
+#
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+#
+# What this overlay changes versus the dev stack:
+#   * Host ports: every internal service and datastore stops publishing to the
+#     host. The gateway (:8080 -- the authenticated, rate-limited API boundary)
+#     and the nginx-served SPA (frontend-prod, :8081) are the only things
+#     reachable from outside the compose network.
+#   * restart: unless-stopped on every long-running container, so the stack
+#     survives daemon restarts and crashes. (The one-shot `tools` jobs -- seed,
+#     neo4j-init -- deliberately keep no restart policy.)
+#   * uvicorn workers via WEB_CONCURRENCY (default 2) for the stateless services
+#     and the gateway. monitoring-service is pinned to a SINGLE worker on
+#     purpose -- see the note on that service below.
+#   * Frontend: the dev Vite server is parked behind a `dev` profile (off here)
+#     and the production nginx image (frontend-prod) starts by default -- no
+#     `--profile` flag needed.
+#
+# Unlike the managed-cloud Render blueprint (render.yaml), the datastores
+# (postgres/neo4j/redis/kafka) still run in-cluster in this profile, so the
+# Neo4j graph and the Kafka event choreography are fully live here.
+#
+# This overlay does NOT inject real secrets -- it inherits `env_file: .env` from
+# the base. See PROD_DOCKER.md for the go-live checklist (rotate JWT_SECRET /
+# MFA_SECRET_ENC_KEY / DB passwords, set AUTH_ENV=production, lock
+# CORS_ALLOWED_ORIGINS to the real origin).
+
+services:
+  # ---------------------------------------------------------------- infra --
+  # Reachable only on the internal compose network; kept running across
+  # restarts. Healthchecks are unaffected (they run inside the container).
+  postgres:
+    restart: unless-stopped
+    ports: !reset []
+
+  neo4j:
+    restart: unless-stopped
+    ports: !reset []
+
+  redis:
+    restart: unless-stopped
+    ports: !reset []
+
+  kafka:
+    restart: unless-stopped
+    ports: !reset []
+
+  # ------------------------------------------------------------ services --
+  # gateway is the ONLY backend that keeps a published host port: it is the
+  # authenticated API boundary (JWT validation + a Redis-backed rate limiter,
+  # so the per-minute counter is shared across workers -- multi-worker safe).
+  gateway:
+    restart: unless-stopped
+    environment:
+      WEB_CONCURRENCY: ${WEB_CONCURRENCY:-2}
+
+  auth-service:
+    restart: unless-stopped
+    ports: !reset []
+    environment:
+      # Kept at `development` by default so the demo auth flows work with the
+      # placeholder .env secrets. Flip to production once real secrets are in
+      # place:  AUTH_ENV=production docker compose -f ... up -d
+      ENV: ${AUTH_ENV:-development}
+      WEB_CONCURRENCY: ${WEB_CONCURRENCY:-2}
+
+  vendor-service:
+    restart: unless-stopped
+    ports: !reset []
+    environment:
+      WEB_CONCURRENCY: ${WEB_CONCURRENCY:-2}
+
+  risk-service:
+    restart: unless-stopped
+    ports: !reset []
+    environment:
+      WEB_CONCURRENCY: ${WEB_CONCURRENCY:-2}
+
+  sbom-service:
+    restart: unless-stopped
+    ports: !reset []
+    environment:
+      WEB_CONCURRENCY: ${WEB_CONCURRENCY:-2}
+
+  compliance-service:
+    restart: unless-stopped
+    ports: !reset []
+    environment:
+      WEB_CONCURRENCY: ${WEB_CONCURRENCY:-2}
+
+  monitoring-service:
+    restart: unless-stopped
+    ports: !reset []
+    environment:
+      # Pinned to ONE worker on purpose. app/services/scheduler.py starts a
+      # single asyncio sweep loop in the FastAPI lifespan; every extra uvicorn
+      # worker would run its own copy of that loop -> duplicated periodic
+      # sweeps and alerts. Scale monitoring by container replicas, not workers.
+      WEB_CONCURRENCY: "1"
+
+  incident-service:
+    restart: unless-stopped
+    ports: !reset []
+    environment:
+      WEB_CONCURRENCY: ${WEB_CONCURRENCY:-2}
+
+  # ------------------------------------------------------------ frontend --
+  # Dev Vite server -> parked behind a `dev` profile so it does NOT start in
+  # prod. The base file puts no profile on it, so it only disappears once this
+  # overlay is applied; the plain `docker compose up` dev flow is untouched.
+  frontend:
+    profiles: ["dev"]
+
+  # Production SPA (multi-stage build -> nginx, /api reverse-proxied to the
+  # gateway). The base file keeps it behind a `prod` profile; clear that here so
+  # it starts by default under this overlay -- no `--profile prod` needed.
+  frontend-prod:
+    profiles: !reset []
+    restart: unless-stopped
